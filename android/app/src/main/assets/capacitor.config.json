@@ -1,0 +1,9 @@
+{
+	"appId": "com.pdfutilities.app",
+	"appName": "PDFPals",
+	"webDir": "public",
+	"server": {
+		"hostname": "localhost",
+		"androidScheme": "https"
+	}
+}

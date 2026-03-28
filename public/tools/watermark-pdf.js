@@ -266,8 +266,8 @@ applyBtn.addEventListener('click', async () => {
 
         pdfDoc.setProducer('PDFPals');
         pdfDoc.setCreator('PDFPals');
-        const pdfBytes = await pdfDoc.save();
-        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const outBytes = await pdfDoc.save();
+        const blob = new Blob([outBytes], { type: 'application/pdf' });
         const fileName = fileNameDisplay.textContent.replace('.pdf', '_watermarked.pdf');
         await MobileBridge.saveFile(blob, fileName);
     } catch (e) {
