@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDFPals - Local & Secure</title>
+    <link rel="stylesheet" href="../css/main.css?v=100">
+    <link rel="stylesheet" href="../css/tool.css">
+    <style>
+        .workspace {
+            max-width: 1400px;
+            margin: 0 auto 3rem;
+            animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .workspace-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem 2.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .page-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 2.5rem;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 3rem;
+            border-radius: 32px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            min-height: 500px;
+        }
+
+        .page-item {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 1rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .page-item:hover {
+            transform: translateY(-8px);
+            border-color: var(--primary);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+            background: rgba(var(--primary-rgb), 0.05);
+        }
+
+        .rotate-controls {
+            position: absolute;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 0.8rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .page-item:hover .rotate-controls {
+            opacity: 1;
+        }
+
+        .rotate-btn {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 8px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .rotate-btn:hover {
+            background: var(--primary);
+            color: #000;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .spinner {
+            border-top: 3px solid var(--primary);
+            filter: drop-shadow(0 0 10px rgba(var(--primary-rgb), 0.5));
+        }
+    </style>
+    <script src="../vendor/pdf-lib/dist/pdf-lib.min.js"></script>
+    <script type="module" src="rotate-pdf.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <nav class="app-header">
+            <a href="../index.html" class="brand-logo">
+                <img src="../assets/icon.png" alt="PDFPals" style="height: 32px; vertical-align: middle; margin-right: 8px;"> PDFPals
+            </a>
+            <div class="tool-nav">
+                <button id="theme-toggle" aria-label="Toggle Theme">
+                    <span class="icon">☀️</span>
+                </button>
+                <a href="../index.html" class="btn back-link">Back to Menu</a>
+            </div>
+        </nav>
+
+        <header style="text-align: center; margin-bottom: 4rem; margin-top: 2rem;">
+            <h1 style="font-size: 3.2rem; margin-bottom: 1.2rem; background: linear-gradient(135deg, var(--text-main) 0%, var(--primary) 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px;">Rotate Panorama</h1>
+            <p style="color: var(--text-muted); font-size: 1.25rem; max-width: 700px; margin: 0 auto; line-height: 1.6;">Fix orientation issues across your entire document. Single-page or batch rotation, handled with fluid precision.</p>
+        </header>
+
+        <main>
+            <div id="drop-zone" class="drop-zone">
+                <div class="drop-content">
+                    <div class="icon-row" style="font-size: 4rem; margin-bottom: 2rem;">
+                        <span>↻</span>
+                    </div>
+                    <p style="font-size: 1.4rem; font-weight: 600;">Drop PDF to fix orientation</p>
+                    <p style="margin: 1.5rem 0; opacity: 0.6;">or <label class="browse-btn" style="text-decoration: underline;">Browse Local Storage</label></p>
+                    <input type="file" id="file-input" accept=".pdf" hidden>
+                </div>
+            </div>
+
+            <div id="loading" class="loading hidden">
+                <div class="spinner"></div>
+                <p style="margin-top: 1.5rem; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; font-size: 0.8rem; color: var(--primary);">Processing Rotational Vectors...</p>
+            </div>
+
+            <div id="workspace" class="workspace hidden">
+                <div class="workspace-header">
+                    <div style="display: flex; align-items: center; gap: 1.5rem;">
+                        <button id="rotate-left-all" class="btn secondary small" style="border-radius: 10px; background: rgba(255,255,255,0.05);">↺ All Left</button>
+                        <button id="rotate-right-all" class="btn secondary small" style="border-radius: 10px; background: rgba(255,255,255,0.05);">↻ All Right</button>
+                        <button id="change-pdf-btn" class="btn secondary outline small" style="border-radius: 8px;">Switch File</button>
+                    </div>
+                    <div class="actions">
+                        <button id="export-btn" class="btn primary" style="border-radius: 10px; font-weight: 700; padding: 0.8rem 1.8rem;">Save Rotated PDF ➔</button>
+                    </div>
+                </div>
+
+                <div id="page-grid" class="page-grid rotate-grid">
+                    <!-- Thumbnails will be injected here -->
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2024 PDFPals. Locally processed, secure & private.</p>
+        </footer>
+    </div>
+    <script src="../js/theme.js?v=99"></script>
+    <script type="module" src="rotate-pdf.js"></script>
+</body>
+
+</html>
+
+

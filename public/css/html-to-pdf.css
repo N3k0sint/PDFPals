@@ -1,0 +1,90 @@
+.converter-container {
+    display: flex;
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    height: 60vh;
+}
+
+.input-panel {
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    overflow: hidden;
+}
+
+.editor-header {
+    background: rgba(0, 0, 0, 0.05);
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    font-weight: 500;
+}
+
+.editor-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+#html-input {
+    flex: 1;
+    border: none;
+    padding: 1.5rem;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 1rem;
+    background: transparent;
+    color: var(--text-main);
+    resize: none;
+    line-height: 1.5;
+}
+
+#html-input:focus {
+    outline: none;
+}
+
+.sidebar-section {
+    flex: 1;
+}
+
+.conversion-tip {
+    background: rgba(16, 185, 129, 0.1);
+    border-left: 4px solid #10b981;
+    padding: 1rem;
+    margin: 1.5rem 0;
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+.hidden-render {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    width: 800px;
+    /* Standard A4ish width */
+    background: white;
+}
+
+select {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    padding: 0.75rem;
+    border-radius: var(--radius);
+}
+
+@media (max-width: 768px) {
+    .converter-container {
+        flex-direction: column;
+        height: auto;
+    }
+
+    #html-input {
+        min-height: 300px;
+    }
+}

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDFPals - Unlock PDF</title>
+    <link rel="stylesheet" href="../css/main.css?v=100">
+    <link rel="stylesheet" href="../css/tool.css">
+    <style>
+        .tool-workspace {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .preview-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 400px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .lock-icon {
+            font-size: 6rem;
+            animation: pulse 2s infinite;
+            filter: drop-shadow(0 0 20px rgba(var(--primary-rgb), 0.3));
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.8; }
+        }
+
+        .sidebar-section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2.5rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+            height: fit-content;
+        }
+
+        .setting-group {
+            margin-bottom: 2rem;
+        }
+
+        .setting-group label {
+            display: block;
+            margin-bottom: 0.75rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--primary);
+        }
+
+        .password-wrapper {
+            position: relative;
+        }
+
+        .password-wrapper input {
+            width: 100%;
+            padding: 1rem 3rem 1rem 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            color: #fff;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .password-wrapper input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(0, 0, 0, 0.3);
+            box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.1);
+        }
+
+        .toggle-icon-btn {
+            position: absolute;
+            right: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #fff;
+            opacity: 0.5;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        .toggle-icon-btn:hover { opacity: 1; }
+
+        .security-info {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 2rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .workspace:not(.hidden) {
+            display: grid !important;
+            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+    </style>
+    <script src="../vendor/pdf-lib/dist/pdf-lib.min.js"></script>
+    <script src="../vendor/pdf-encrypt-lite.js"></script>
+    <script src="../vendor/pdfjs-dist/build/pdf.mjs" type="module"></script>
+    <script type="module" src="unlock-pdf.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <nav class="app-header">
+            <a href="../index.html" class="brand-logo">
+                <img src="../assets/icon.png" alt="PDFPals" style="height: 32px; vertical-align: middle; margin-right: 8px;"> PDFPals
+            </a>
+            <div class="tool-nav">
+                <button id="theme-toggle" aria-label="Toggle Theme">
+                    <span class="icon">☀️</span>
+                </button>
+                <a href="../index.html" class="btn back-link">Back to Menu</a>
+            </div>
+        </nav>
+
+        <header style="text-align: center; margin-bottom: 3rem; margin-top: 2rem;">
+            <h1 style="font-size: 2.8rem; margin-bottom: 1rem; background: linear-gradient(135deg, var(--text-main) 0%, var(--primary) 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Unlock PDF</h1>
+            <p style="color: var(--text-muted); font-size: 1.1rem; max-width: 600px; margin: 0 auto;">Restore access to your documents by removing passwords securely on your device.</p>
+        </header>
+
+        <main>
+            <div id="drop-zone" class="drop-zone">
+                <div class="drop-content">
+                    <div class="icon-row" style="font-size: 3.5rem; margin-bottom: 1.5rem;">
+                        <span>🔓</span>
+                    </div>
+                    <p style="font-size: 1.25rem; font-weight: 500;">Drop encrypted PDF here</p>
+                    <p style="margin: 1rem 0;">or <label class="browse-btn">Open File Manager</label></p>
+                    <input type="file" id="file-input" accept=".pdf" hidden>
+                </div>
+            </div>
+
+            <div id="workspace" class="tool-workspace hidden">
+                <div class="preview-panel">
+                    <div id="pdf-preview" class="pdf-preview-grid">
+                        <div class="lock-icon">🔒</div>
+                    </div>
+                </div>
+
+                <aside class="sidebar-section">
+                    <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem;">
+                        <h2 style="margin:0; font-size: 1.4rem;">Unlock Vault</h2>
+                        <button id="change-pdf-btn" class="btn secondary outline small" style="border-radius: 10px;">Switch File</button>
+                    </div>
+
+                    <div class="setting-group">
+                        <label for="password-input">Master Password</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="password-input" placeholder="Authorization required..." class="full-width">
+                            <button type="button" id="toggle-password" class="toggle-icon-btn"
+                                aria-label="Toggle Password">👁️</button>
+                        </div>
+                    </div>
+
+                    <div class="security-info">
+                        🔒 <b>Local Decryption:</b> Your password is only used to compute the key in your browser's RAM. It is never stored or shared.
+                    </div>
+
+                    <button id="apply-unlock" class="btn primary full-width action-btn" style="padding: 1.2rem; font-weight: 700; border-radius: 12px;">Unlock & Export ➔</button>
+                </aside>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 PDFPals. Locally processed, secure & private.</p>
+        </footer>
+    </div>
+    <script src="../js/theme.js?v=100"></script>
+    <script src="../js/mobile-bridge.js"></script>
+</body>
+
+</html>

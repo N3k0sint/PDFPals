@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDFPals - CamScanner</title>
+    <link rel="stylesheet" href="../css/main.css?v=100">
+    <link rel="stylesheet" href="../css/tool.css">
+    <style>
+        .workspace-layout {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 2rem;
+            animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .camera-section {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 28px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .gallery-section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 28px;
+            padding: 2.5rem;
+            height: fit-content;
+            position: sticky;
+            top: 2rem;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+        }
+
+        .video-container {
+            background: #000;
+            position: relative;
+            overflow: hidden;
+            border-radius: 20px 20px 0 0;
+            aspect-ratio: 4/3;
+        }
+
+        .camera-controls {
+            padding: 2rem;
+            background: rgba(0, 0, 0, 0.2);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        #camera-selector, #filter-selector {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 12px;
+            border-radius: 12px;
+            width: 100%;
+        }
+
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-top: 1.5rem;
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        .image-grid::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .image-grid::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        .captured-page {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            aspect-ratio: 1/1.4;
+        }
+
+        .captured-page img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .modal-content {
+            background: rgba(18, 18, 20, 0.95) !important;
+            backdrop-filter: blur(32px);
+            -webkit-backdrop-filter: blur(32px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 32px;
+            box-shadow: 0 24px 80px rgba(0,0,0,0.8);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 1100px) {
+            .workspace-layout {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+            }
+            .gallery-section {
+                position: static;
+                margin-top: 2rem;
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-header {
+                flex-direction: column;
+                height: auto;
+                padding: 1.5rem;
+                gap: 1.5rem;
+            }
+            .tool-nav {
+                width: 100%;
+                justify-content: space-between;
+            }
+            header h1 {
+                font-size: 2.2rem !important;
+            }
+            header p {
+                font-size: 1.1rem !important;
+            }
+            .camera-controls {
+                padding: 1.5rem;
+            }
+            .config-row {
+                grid-template-columns: 1fr !important;
+            }
+            .image-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+    <!-- Essential Libraries -->
+    <script src="../vendor/pdf-lib/dist/pdf-lib.min.js"></script>
+    <script src="https://docs.opencv.org/4.x/opencv.js" type="text/javascript" onload="window.cvInit = true; document.dispatchEvent(new Event('cvLoaded'))"></script>
+    <script src="https://unpkg.com/tesseract.js@v2.1.0/dist/tesseract.min.js"></script>
+    <script src="../vendor/pdfjs-dist/build/pdf.mjs" type="module"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <nav class="app-header">
+            <a href="../index.html" class="brand-logo">
+                <img src="../assets/icon.png" alt="PDFPals" style="height: 32px; vertical-align: middle; margin-right: 8px;"> PDFPals
+            </a>
+            <div class="tool-nav">
+                <button id="theme-toggle" aria-label="Toggle Theme">
+                    <span class="icon">☀️</span>
+                </button>
+                <a href="../index.html" class="btn back-link">Back to Menu</a>
+            </div>
+        </nav>
+
+        <header style="text-align: center; margin-bottom: 4rem; margin-top: 2rem;">
+            <h1 style="font-size: 3.2rem; margin-bottom: 1.2rem; background: linear-gradient(135deg, var(--text-main) 0%, var(--primary) 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px;">CamScanner</h1>
+            <p style="color: var(--text-muted); font-size: 1.25rem; max-width: 700px; margin: 0 auto; line-height: 1.6;">AI-powered document digitization. Edge detection, intelligent filters, and OCR processed entirely on your hardware.</p>
+        </header>
+
+        <main>
+            <div id="setup-zone" class="drop-zone">
+                <div class="drop-content">
+                    <div class="icon-row" style="font-size: 4rem; margin-bottom: 2rem;">
+                        <span>📷</span>
+                    </div>
+                    <p style="font-size: 1.4rem; font-weight: 600;">Grant vision access to begin</p>
+                    <button id="start-camera-btn" class="btn primary mt-4" style="padding: 1rem 2.5rem; border-radius: 12px; margin-top: 2rem;">Initialize Optics</button>
+                </div>
+            </div>
+
+            <div id="workspace" class="workspace hidden">
+                <div class="workspace-layout">
+                    <!-- Left: Camera Viewfinder & Crop Area -->
+                    <div class="camera-section">
+
+                        <!-- STATE 1: LIVE CAMERA -->
+                        <div id="live-camera-view" style="display: flex; flex-direction: column; width: 100%; height: 100%;">
+                            <div class="video-container">
+                                <video id="viewfinder" autoplay playsinline style="width: 100%; display: block;"></video>
+                                <canvas id="overlay-canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10;"></canvas>
+                                <canvas id="capture-canvas" hidden></canvas>
+                            </div>
+                            <!-- Camera Controls -->
+                            <div class="camera-controls">
+                                <div class="config-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                    <div class="input-group">
+                                        <label style="display: block; margin-bottom: 0.5rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--primary);">Optic Source</label>
+                                        <select id="camera-selector">
+                                            <option value="">Loading cameras...</option>
+                                        </select>
+                                    </div>
+                                    <div class="input-group">
+                                        <label style="display: block; margin-bottom: 0.5rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--primary);">Filter Engine</label>
+                                        <select id="filter-selector">
+                                            <option value="none">Original (Full Color)</option>
+                                            <option value="grayscale">Grayscale</option>
+                                            <option value="bw" selected>B&W Document (Magic)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div id="ai-status" style="font-size: 0.75rem; color: #fff; background: rgba(var(--primary-rgb), 0.1); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(var(--primary-rgb), 0.2); width: fit-content; margin: 0 auto;">
+                                    <span class="pulse"></span> 🟢 AI Neural Engine Active
+                                </div>
+
+                                <div style="display: flex; gap: 1rem; width: 100%;">
+                                    <button id="capture-btn" class="btn primary capture-btn" style="flex: 2; padding: 1.2rem; border-radius: 12px; font-weight: 700;">
+                                        📸 Capture Interface
+                                    </button>
+                                    <button id="switch-camera-btn" class="btn secondary" style="flex: 1; border-radius: 12px;">Switch</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- STATE 2: MANUAL CROP VIEW -->
+                        <div id="crop-view" class="hidden" style="display: none; flex-direction: column; width: 100%; height: 100%; background: #000;">
+                            <div style="flex-grow: 1; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 2rem;">
+                                <div id="crop-wrapper" style="position: relative; box-shadow: 0 40px 100px rgba(0,0,0,0.8); border-radius: 4px; overflow: hidden;">
+                                    <img id="crop-photo" style="display: block; width: 100%; height: 100%; user-select: none;" draggable="false">
+                                    <canvas id="crop-canvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: crosshair; touch-action: none;"></canvas>
+                                </div>
+                            </div>
+                            <div class="crop-controls" style="padding: 2rem; background: rgba(0,0,0,0.4); display: flex; gap: 1rem; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.1);">
+                                <button id="retake-btn" class="btn secondary" style="flex: 1; border-radius: 12px; padding: 1rem;">❌ Retake</button>
+                                <button id="apply-crop-btn" class="btn primary" style="flex: 2; border-radius: 12px; padding: 1rem; font-weight: 700;">✅ Finalize Page</button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Right: Captured Images & Export -->
+                    <div class="gallery-section">
+                        <div class="workspace-header" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1.5rem; margin-bottom: 1.5rem;">
+                            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                                <div>
+                                    <h2 style="margin: 0; font-size: 1.3rem; letter-spacing: -0.5px;">Document Pages</h2>
+                                    <span id="page-count" style="font-size: 0.85rem; color: var(--primary); font-weight: 700;">0 Pages Captured</span>
+                                </div>
+                                <button id="reset-camera-btn" class="btn secondary sm" style="padding: 6px 12px; border-radius: 8px; font-size: 0.7rem;">Reset</button>
+                            </div>
+                        </div>
+
+                        <div id="image-grid" class="image-grid">
+                            <!-- Captured images will appear here -->
+                        </div>
+
+                        <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.1);">
+                            <button id="extract-text-btn" class="btn secondary full-width" disabled style="padding: 1rem; border-radius: 12px; font-weight: 600;">🔍 OCR Text</button>
+                            <button id="export-btn" class="btn primary full-width" disabled style="padding: 1rem; border-radius: 12px; font-weight: 700; font-size: 1.1rem;">Save Scan ➔</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Tesseract OCR Results Modal -->
+            <div id="ocr-modal" class="modal hidden">
+                <div class="modal-content"
+                    style="max-width: 600px; width: 90%; background: var(--bg-card); padding: 2rem; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h2 style="margin: 0; color: var(--text-color);">Extracted Text <span id="ocr-status"
+                                style="font-size: 0.9rem; color: #10b981; margin-left: 10px; font-weight: normal;"></span>
+                        </h2>
+                        <button id="close-modal-btn"
+                            style="background: none; border: none; font-size: 1.5rem; color: var(--text-muted); cursor: pointer;">&times;</button>
+                    </div>
+
+                    <div id="ocr-progress-container" class="hidden" style="margin-bottom: 1rem;">
+                        <div
+                            style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.25rem;">
+                            <span id="ocr-progress-text">Initializing AI...</span>
+                            <span id="ocr-progress-percent">0%</span>
+                        </div>
+                        <div
+                            style="width: 100%; height: 8px; background: var(--bg-page); border-radius: 4px; overflow: hidden;">
+                            <div id="ocr-progress-bar"
+                                style="height: 100%; width: 0%; background: #3b82f6; transition: width 0.3s ease;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <textarea id="ocr-result-text" spellcheck="false"
+                        style="width: 100%; height: 300px; padding: 1rem; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-page); color: var(--text-color); font-family: monospace; resize: vertical; margin-bottom: 1rem;"
+                        readonly></textarea>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+                        <button id="download-txt-btn" class="btn secondary">Save as .txt</button>
+                        <button id="copy-text-btn" class="btn primary">Copy to Clipboard</button>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <footer>
+            <p>&copy; 2026 PDFPals. Locally processed, secure & private.</p>
+        </footer>
+    </div>
+    <script src="../js/theme.js?v=99"></script>
+    <script src="../js/mobile-bridge.js"></script>
+    <script type="module" src="scan-to-pdf.js"></script>
+</body>
+
+</html>
+
+
+

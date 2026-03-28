@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDFPals - Page Numbers</title>
+    <link rel="stylesheet" href="../css/main.css?v=100">
+    <link rel="stylesheet" href="../css/tool.css">
+    <style>
+        .workspace {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 360px;
+            gap: 2rem;
+            animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .thumbnails-grid {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 32px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 3rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 2rem;
+            min-height: 700px;
+        }
+
+        .sidebar-section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 28px;
+            padding: 2.5rem;
+            height: fit-content;
+            position: sticky;
+            top: 2rem;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+        }
+
+        .thumbnail-item {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 10px;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .thumbnail-item:hover {
+            transform: scale(1.05);
+            border-color: var(--primary);
+        }
+
+        .pos-cell {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .pos-cell:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .pos-cell.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.4);
+        }
+
+        input, select {
+            background: rgba(0, 0, 0, 0.3) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            color: #fff !important;
+            border-radius: 8px !important;
+            padding: 8px 12px !important;
+        }
+
+        .radio-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px 15px;
+            border-radius: 10px;
+            flex: 1;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            font-weight: 500;
+        }
+
+        .radio-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .radio-item.active {
+            background: var(--primary);
+            color: #000 !important;
+            border-color: var(--primary);
+            box-shadow: 0 4px 15px rgba(var(--primary-rgb), 0.3);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+    <script src="../vendor/pdf-lib/dist/pdf-lib.min.js"></script>
+    <script type="module" src="page-numbers.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <nav class="app-header">
+            <a href="../index.html" class="brand-logo">
+                <img src="../assets/icon.png" alt="PDFPals" style="height: 32px; vertical-align: middle; margin-right: 8px;"> PDFPals
+            </a>
+            <div class="tool-nav">
+                <button id="theme-toggle" aria-label="Toggle Theme">
+                    <span class="icon">☀️</span>
+                </button>
+                <a href="../index.html" class="btn back-link">Back to Menu</a>
+            </div>
+        </nav>
+
+        <header style="text-align: center; margin-bottom: 4rem; margin-top: 2rem;">
+            <h1 style="font-size: 3.2rem; margin-bottom: 1.2rem; background: linear-gradient(135deg, var(--text-main) 0%, var(--primary) 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px;">Page Numbers</h1>
+            <p style="color: var(--text-muted); font-size: 1.25rem; max-width: 700px; margin: 0 auto; line-height: 1.6;">Automated pagination and indexing. Define your layout, format, and placement with elegant simplicity.</p>
+        </header>
+
+        <main>
+            <div id="drop-zone" class="drop-zone">
+                <div class="drop-content">
+                    <div class="icon-row" style="font-size: 4rem; margin-bottom: 2rem;">
+                        <span>🔢</span>
+                    </div>
+                    <p style="font-size: 1.4rem; font-weight: 600;">Drop PDF to begin indexing</p>
+                    <p style="margin: 1.5rem 0; opacity: 0.6;">or <label class="browse-btn" style="text-decoration: underline;">Open Document</label></p>
+                    <input type="file" id="file-input" accept=".pdf" hidden>
+                </div>
+            </div>
+
+            <div id="workspace" class="workspace hidden">
+                <div id="thumbnails-grid" class="thumbnails-grid">
+                    <!-- Thumbnails with dots will be injected here -->
+                </div>
+
+                <aside class="sidebar-section">
+                    <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem;">
+                        <h2 style="margin:0; font-size: 1.3rem; letter-spacing: -0.5px;">Index Settings</h2>
+                        <button id="change-pdf-btn" class="btn secondary outline small" style="border-radius: 8px;">Switch</button>
+                    </div>
+
+                    <div class="setting-group" style="margin-bottom: 2rem;">
+                        <label style="display: block; margin-bottom: 0.8rem; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--primary);">Layout Mode</label>
+                        <div class="radio-group" style="display: flex; gap: 1rem;">
+                            <label class="radio-item active" data-mode="single">
+                                <input type="radio" name="page-mode" value="single" checked style="display:none;"> Single
+                            </label>
+                            <label class="radio-item" data-mode="facing">
+                                <input type="radio" name="page-mode" value="facing" style="display:none;"> Facing
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="setting-group" style="margin-bottom: 2rem;">
+                        <label style="display: block; margin-bottom: 0.8rem; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--primary);">Anchor Position</label>
+                        <div class="position-picker" id="position-picker" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; aspect-ratio: 1; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+                            <div class="pos-cell" data-pos="top-left"></div>
+                            <div class="pos-cell" data-pos="top-center"></div>
+                            <div class="pos-cell" data-pos="top-right"></div>
+                            <div class="pos-cell" data-pos="middle-left"></div>
+                            <div class="pos-cell" data-pos="middle-center"></div>
+                            <div class="pos-cell" data-pos="middle-right"></div>
+                            <div class="pos-cell active" data-pos="bottom-left"></div>
+                            <div class="pos-cell" data-pos="bottom-center"></div>
+                            <div class="pos-cell" data-pos="bottom-right"></div>
+                        </div>
+                    </div>
+
+                    <div class="setting-group" style="margin-bottom: 2rem;">
+                        <label style="display: block; margin-bottom: 0.8rem; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--primary);">Range & Start</label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="input-range">
+                                <input type="number" id="pn-from" value="1" min="1" style="width: 100%;">
+                            </div>
+                            <div class="input-range">
+                                <input type="number" id="pn-to" value="1" min="1" style="width: 100%;">
+                            </div>
+                        </div>
+                        <input type="number" id="pn-start" value="1" min="1" style="width: 100%; margin-top: 10px;">
+                    </div>
+
+                    <div class="setting-group" style="margin-bottom: 2.5rem;">
+                        <label style="display: block; margin-bottom: 0.8rem; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--primary);">Format & Typography</label>
+                        <select id="pn-format" style="width: 100%; margin-bottom: 10px;">
+                            <option value="simple">{n}</option>
+                            <option value="page-n">Page {n}</option>
+                            <option value="n-of-m">Page {n} of {m}</option>
+                        </select>
+                        <input type="number" id="pn-size" value="12" min="6" max="72" style="width: 100%;">
+                    </div>
+
+                    <button id="apply-pn" class="btn primary full-width action-btn" style="padding: 1rem; border-radius: 12px; font-weight: 700; font-size: 1rem;">Generate Index ➔</button>
+                </aside>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 PDFPals. Locally processed, secure & private.</p>
+        </footer>
+    </div>
+    <script src="../js/theme.js?v=100"></script>
+</body>
+
+</html>

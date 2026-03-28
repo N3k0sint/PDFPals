@@ -1,0 +1,147 @@
+/* Page Numbers Tool Overhaul Styles */
+.workspace {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 2rem;
+    align-items: flex-start;
+}
+
+#thumbnails-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1.5rem;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.thumbnail-wrapper {
+    background: white;
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.2s;
+    aspect-ratio: 1 / 1.4;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.thumbnail-wrapper:hover {
+    transform: translateY(-2px);
+}
+
+.thumbnail-wrapper canvas {
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--border);
+}
+
+.page-label {
+    margin-top: 8px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* Red Dot Overlay */
+.placement-dot {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: #e53935;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 5px rgba(229, 57, 53, 0.5);
+    pointer-events: none;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 10;
+}
+
+/* Position Grid 3x3 */
+.position-picker {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 4px;
+    width: 120px;
+    height: 120px;
+    margin: 1rem 0;
+    border: 1px solid var(--border);
+    padding: 4px;
+    background: var(--bg-main);
+}
+
+.pos-cell {
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.pos-cell:hover {
+    background: var(--border);
+}
+
+.pos-cell.active {
+    background: #e53935;
+    border-color: #e53935;
+}
+
+.pos-cell.active::after {
+    content: '';
+    width: 8px;
+    height: 8px;
+    background: white;
+    border-radius: 50%;
+}
+
+/* Options styling */
+.sidebar-section h2 {
+    font-size: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.setting-group {
+    margin-bottom: 1.5rem;
+}
+
+.setting-group label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-main);
+}
+
+.radio-group {
+    display: flex;
+    gap: 1rem;
+    background: var(--bg-secondary);
+    padding: 0.5rem;
+    border-radius: 8px;
+}
+
+.radio-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.input-range {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.input-range input {
+    width: 60px;
+}

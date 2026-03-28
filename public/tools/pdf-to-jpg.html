@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDFPals - PDF to JPG</title>
+    <link rel="stylesheet" href="../css/main.css?v=100">
+    <link rel="stylesheet" href="../css/tool.css">
+    <!-- Load JSZip -->
+    <script src="../vendor/jszip/dist/jszip.min.js"></script>
+    <!-- Load PDF.js -->
+    <script type="module" src="pdf-to-jpg.js"></script>
+    <style>
+        .preview-container {
+            max-width: 1200px;
+            margin: 0 auto 3rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 2rem;
+            padding: 2.5rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 32px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .controls-glass {
+            max-width: 1200px;
+            margin: 0 auto 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .page-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 1rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .page-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--primary);
+            background: rgba(var(--primary-rgb), 0.05);
+        }
+
+        .page-card img {
+            width: 100%;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .workspace-active:not(.hidden) {
+            display: block !important;
+            animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+    </style>
+    <script type="module" src="pdf-to-jpg.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <nav class="app-header">
+            <a href="../index.html" class="brand-logo">
+                <img src="../assets/icon.png" alt="PDFPals" style="height: 32px; vertical-align: middle; margin-right: 8px;"> PDFPals
+            </a>
+            <div class="tool-nav">
+                <button id="theme-toggle" aria-label="Toggle Theme">
+                    <span class="icon">☀️</span>
+                </button>
+                <a href="../index.html" class="btn back-link">Back to Menu</a>
+            </div>
+        </nav>
+
+        <header style="text-align: center; margin-bottom: 3.5rem; margin-top: 2rem;">
+            <h1 style="font-size: 3rem; margin-bottom: 1rem; background: linear-gradient(135deg, #fff 0%, var(--primary) 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px;">PDF to Image</h1>
+            <p style="color: var(--text-muted); font-size: 1.2rem; max-width: 650px; margin: 0 auto;">High-fidelity rendering across all pages. Extract pixel-perfect JPGs instantly.</p>
+        </header>
+
+        <main>
+            <div id="drop-zone" class="drop-zone">
+                <div class="drop-content">
+                    <div class="icon-row" style="font-size: 4rem; margin-bottom: 1.5rem;">
+                        <span>📄</span>
+                        <span style="font-size: 2rem; margin: 0 1rem; opacity: 0.5;">➔</span>
+                        <span>🖼️</span>
+                    </div>
+                    <p style="font-size: 1.4rem; font-weight: 600;">Drop PDF to begin extraction</p>
+                    <p style="margin: 1.5rem 0; opacity: 0.6;">or <label class="browse-btn" style="text-decoration: underline;">Select Document</label></p>
+                    <input type="file" id="file-input" accept="application/pdf" hidden>
+                </div>
+            </div>
+
+            <div id="workspace" class="workspace-active hidden">
+                <div id="controls" class="controls-glass">
+                    <div class="file-info" style="display: flex; flex-direction: column;">
+                        <span id="file-name" style="font-weight: 700; color: #fff; font-size: 1.1rem;">filename.pdf</span>
+                        <span id="page-count" style="color: var(--primary); font-size: 0.9rem; font-weight: 600;">0 pages identified</span>
+                    </div>
+                    <div class="actions" style="display: flex; gap: 1rem;">
+                        <button id="reset-btn" class="btn secondary outline small" style="border-radius: 10px;">Switch File</button>
+                        <button id="download-all-btn" class="btn primary" style="border-radius: 10px; font-weight: 700; padding: 0.8rem 1.8rem;">Download Bundle (ZIP) ➔</button>
+                    </div>
+                </div>
+
+                <div id="preview-container" class="preview-container">
+                    <!-- Pages will be injected here -->
+                </div>
+            </div>
+
+            <div id="loading" class="loading hidden">
+                <div class="spinner" style="border-top-color: var(--primary);"></div>
+                <p style="margin-top: 1.5rem; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; font-size: 0.8rem; color: var(--primary);">Rendering Canvas...</p>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 PDFPals. Locally processed, secure & private.</p>
+        </footer>
+    </div>
+    <script src="../js/theme.js?v=100"></script>
+    <script src="../js/mobile-bridge.js"></script>
+</body>
+
+</html>
+
+

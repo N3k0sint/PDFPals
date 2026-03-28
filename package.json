@@ -1,0 +1,58 @@
+{
+  "name": "pdf-scanner",
+  "version": "1.0.0",
+  "description": "",
+  "main": "electron-main.js",
+  "scripts": {
+    "start": "node server.js",
+    "electron:start": "electron .",
+    "build:win": "electron-builder --win",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@capacitor/android": "^5.7.8",
+    "@capacitor/cli": "^5.7.8",
+    "@capacitor/core": "^5.7.8",
+    "@capacitor/filesystem": "^5.2.2",
+    "@capacitor/share": "^5.0.8",
+    "cors": "^2.8.6",
+    "docx": "^9.5.3",
+    "docx-preview": "^0.3.7",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.3.0",
+    "helmet": "^8.1.0",
+    "jszip": "^3.10.1",
+    "mammoth": "^1.11.0",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^5.4.624",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "electron": "^40.8.0",
+    "electron-builder": "^26.8.1"
+  },
+  "build": {
+    "appId": "com.pdfutilities.app",
+    "productName": "PDFPals Suite",
+    "mac": {
+      "category": "public.app-category.utilities"
+    },
+    "win": {
+      "target": [
+        "portable",
+        "nsis"
+      ],
+      "icon": "public/assets/icon.png"
+    },
+    "files": [
+      "public/**/*",
+      "electron-main.js"
+    ],
+    "directories": {
+      "output": "dist"
+    }
+  }
+}

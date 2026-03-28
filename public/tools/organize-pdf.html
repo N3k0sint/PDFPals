@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDFPals - Organize PDF</title>
+    <link rel="stylesheet" href="../css/main.css?v=100">
+    <link rel="stylesheet" href="../css/tool.css">
+    <style>
+        .workspace {
+            max-width: 1400px;
+            margin: 0 auto 3rem;
+            animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .workspace-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem 2.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .page-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 2rem;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 3rem;
+            border-radius: 32px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            min-height: 500px;
+        }
+
+        .page-item {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 1rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            cursor: grab;
+        }
+
+        .page-item:hover {
+            transform: translateY(-8px) scale(1.02);
+            border-color: var(--primary);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+            background: rgba(var(--primary-rgb), 0.05);
+        }
+
+        .page-item.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+
+        .modal-content {
+            background: rgba(15, 15, 15, 0.8);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-radius: 28px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 3rem;
+            max-width: 500px;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .spinner {
+            border-top: 3px solid var(--primary);
+            filter: drop-shadow(0 0 10px rgba(var(--primary-rgb), 0.5));
+        }
+    </style>
+    <script src="../vendor/pdf-lib/dist/pdf-lib.min.js"></script>
+    <script type="module" src="organize-pdf.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <nav class="app-header">
+            <a href="../index.html" class="brand-logo">
+                <img src="../assets/icon.png" alt="PDFPals" style="height: 32px; vertical-align: middle; margin-right: 8px;"> PDFPals
+            </a>
+            <div class="tool-nav">
+                <button id="theme-toggle" aria-label="Toggle Theme">
+                    <span class="icon">☀️</span>
+                </button>
+                <a href="../index.html" class="btn back-link">Back to Menu</a>
+            </div>
+        </nav>
+
+        <header style="text-align: center; margin-bottom: 4rem; margin-top: 2rem;">
+            <h1 style="font-size: 3.2rem; margin-bottom: 1.2rem; background: linear-gradient(135deg, var(--text-main) 0%, var(--primary) 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px;">Architect PDF</h1>
+            <p style="color: var(--text-muted); font-size: 1.25rem; max-width: 700px; margin: 0 auto; line-height: 1.6;">Reorder, rotate, or remove pages with a fluid drag-and-drop interface. Your document structure, redefined.</p>
+        </header>
+
+        <main>
+            <div id="drop-zone" class="drop-zone">
+                <div class="drop-content">
+                    <div class="icon-row" style="font-size: 4rem; margin-bottom: 2rem;">
+                        <span>📑</span>
+                    </div>
+                    <p style="font-size: 1.4rem; font-weight: 600;">Drop PDF to begin editing</p>
+                    <p style="margin: 1.5rem 0; opacity: 0.6;">or <label class="browse-btn" style="text-decoration: underline;">Browse Local Storage</label></p>
+                    <input type="file" id="file-input" accept=".pdf" hidden>
+                </div>
+            </div>
+
+            <div id="loading" class="loading hidden">
+                <div class="spinner"></div>
+                <p style="margin-top: 1.5rem; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; font-size: 0.8rem; color: var(--primary);">Analyzing Page Layouts...</p>
+            </div>
+
+            <div id="workspace" class="workspace hidden">
+                <div class="workspace-header">
+                    <div style="display: flex; align-items: center; gap: 1.5rem;">
+                        <span id="file-name" class="file-name" style="font-weight: 700; color: #fff; font-size: 1.1rem;">filename.pdf</span>
+                        <button id="change-pdf-btn" class="btn secondary outline small" style="border-radius: 8px;">Switch File</button>
+                    </div>
+                    <div class="actions" style="display: flex; gap: 1rem;">
+                        <button id="add-more-btn" class="btn secondary small" style="border-radius: 10px; background: rgba(255,255,255,0.05);">➕ More Docs</button>
+                        <input type="file" id="add-more-input" accept=".pdf" multiple hidden>
+                        <button id="reset-btn" class="btn secondary small" style="border-radius: 10px;">Reset Order</button>
+                        <button id="export-btn" class="btn primary" style="border-radius: 10px; font-weight: 700; padding: 0.8rem 1.8rem;">Export Final PDF ➔</button>
+                    </div>
+                </div>
+
+                <div id="page-grid" class="page-grid">
+                    <!-- Thumbnails will be injected here -->
+                </div>
+            </div>
+        </main>
+
+        <div id="password-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2 style="font-size: 1.8rem; margin-bottom: 1rem;">Unlock Required</h2>
+                <p style="opacity: 0.7; margin-bottom: 2rem;">This document is vaulted. Authorization is required to access pages.</p>
+                <input type="password" id="pdf-password" placeholder="Master Password" class="input-field"
+                    style="width: 100%; margin-bottom: 2rem; background: rgba(0,0,0,0.4);">
+                <div class="modal-actions" style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button id="cancel-password-btn" class="btn secondary outline">Abort</button>
+                    <button id="submit-password-btn" class="btn primary">Authorize</button>
+                </div>
+            </div>
+        </div>
+        <footer>
+            <p>&copy; 2026 PDFPals. Locally processed, secure & private.</p>
+        </footer>
+    </div>
+    <script src="../js/theme.js?v=99"></script>
+    <script src="../js/mobile-bridge.js"></script>
+    <script type="module" src="organize-pdf.js"></script>
+</body>
+
+</html>

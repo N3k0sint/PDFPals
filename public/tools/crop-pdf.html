@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDFPals - Crop PDF</title>
+    <link rel="stylesheet" href="../css/main.css?v=100">
+    <link rel="stylesheet" href="../css/tool.css">
+    <style>
+        .crop-workspace {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 2rem;
+            animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .preview-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 28px;
+            padding: 3rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 700px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .sidebar-section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 28px;
+            padding: 2.5rem;
+            height: fit-content;
+            position: sticky;
+            top: 2rem;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+        }
+
+        .crop-container {
+            position: relative;
+            box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+            border-radius: 4px;
+            overflow: visible !important;
+        }
+
+        .crop-box {
+            border: 2px solid var(--primary);
+            background: rgba(var(--primary-rgb), 0.1);
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
+            cursor: move;
+        }
+
+        .handle {
+            width: 14px;
+            height: 14px;
+            background: #fff;
+            border: 3px solid var(--primary);
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(var(--primary-rgb), 0.5);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+    <script src="../vendor/pdf-lib/dist/pdf-lib.min.js"></script>
+    <script type="module" src="crop-pdf.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <nav class="app-header">
+            <a href="../index.html" class="brand-logo">
+                <img src="../assets/icon.png" alt="PDFPals" style="height: 32px; vertical-align: middle; margin-right: 8px;"> PDFPals
+            </a>
+            <div class="tool-nav">
+                <button id="theme-toggle" aria-label="Toggle Theme">
+                    <span class="icon">☀️</span>
+                </button>
+                <a href="../index.html" class="btn back-link">Back to Menu</a>
+            </div>
+        </nav>
+
+        <header style="text-align: center; margin-bottom: 4rem; margin-top: 2rem;">
+            <h1 style="font-size: 3.2rem; margin-bottom: 1.2rem; background: linear-gradient(135deg, #fff 0%, var(--primary) 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px;">Precision Crop</h1>
+            <p style="color: var(--text-muted); font-size: 1.25rem; max-width: 700px; margin: 0 auto; line-height: 1.6;">Trim unnecessary margins or focus on specific regions with pixel-perfect accuracy. Your vision, focused.</p>
+        </header>
+
+        <main>
+            <div id="drop-zone" class="drop-zone">
+                <div class="drop-content">
+                    <div class="icon-row" style="font-size: 4rem; margin-bottom: 2rem;">
+                        <span>✂️</span>
+                    </div>
+                    <p style="font-size: 1.4rem; font-weight: 600;">Drop PDF to start cropping</p>
+                    <p style="margin: 1.5rem 0; opacity: 0.6;">or <label class="browse-btn" style="text-decoration: underline;">Open Document</label></p>
+                    <input type="file" id="file-input" accept=".pdf" hidden>
+                </div>
+            </div>
+
+            <div id="workspace" class="crop-workspace hidden">
+                <div class="preview-panel">
+                    <div id="crop-container" class="crop-container">
+                        <!-- PDF canvases will be rendered here -->
+                    </div>
+                </div>
+
+                <aside class="sidebar-section">
+                    <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem;">
+                        <h2 style="margin:0; font-size: 1.3rem; letter-spacing: -0.5px;">Crop Settings</h2>
+                        <button id="change-pdf-btn" class="btn secondary outline small" style="border-radius: 8px;">Switch</button>
+                    </div>
+                    
+                    <div class="info-card" style="background: rgba(255,255,255,0.03); padding: 1.2rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 2rem;">
+                        <p style="font-size: 0.85rem; margin: 0; line-height: 1.5; opacity: 0.7;">Adjust the viewport on the first page. The transformation will be applied globally.</p>
+                    </div>
+
+                    <div class="setting-group" style="margin-bottom: 2.5rem;">
+                        <label style="display: block; margin-bottom: 1rem; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--primary);">Automated Tools</label>
+                        <button id="auto-crop" class="btn secondary full-width" style="border-radius: 12px; background: rgba(255,255,255,0.05);">Content Detection</button>
+                    </div>
+
+                    <button id="apply-crop" class="btn primary full-width action-btn" style="padding: 1rem; border-radius: 12px; font-weight: 700; font-size: 1rem;">Execute Crop ➔</button>
+                </aside>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2024 PDFPals. Locally processed, secure & private.</p>
+        </footer>
+    </div>
+    <script src="../js/theme.js?v=100"></script>
+</body>
+
+</html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDFPals - Local & Secure</title>
+    <link rel="stylesheet" href="css/main.css?v=100">
+    <link rel="stylesheet" href="css/dashboard.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <nav class="app-header">
+            <a href="index.html" class="brand-logo">
+                <img src="assets/icon.png" alt="PDFPals"
+                    style="height: 32px; vertical-align: middle; margin-right: 8px;"> PDFPals
+            </a>
+            <div class="tool-nav">
+                <button id="theme-toggle" aria-label="Toggle Theme">
+                    <span class="icon">☀️</span>
+                </button>
+            </div>
+        </nav>
+
+        <header class="hero-section">
+            <h1>Your friendly neighborhood PDF sidekick</h1>
+            <p>All the tools you need to handle PDFs, handled by a pal. 100% free, secure, and easy to use—merge,
+                convert, or scan with just a click.</p>
+        </header>
+
+        <nav class="filter-bar">
+            <button class="filter-btn active" data-filter="all">All Tools</button>
+            <button class="filter-btn" data-filter="organize">Organize PDF</button>
+            <button class="filter-btn" data-filter="optimize">Optimize PDF</button>
+            <button class="filter-btn" data-filter="convert">Convert PDF</button>
+            <button class="filter-btn" data-filter="edit">Edit PDF</button>
+            <button class="filter-btn" data-filter="security">PDF Security</button>
+        </nav>
+
+        <main class="dashboard-grid" id="main-grid">
+            <!-- Organize -->
+            <a href="tools/merge-pdf.html" class="tool-card" data-category="organize">
+                <div class="icon-box red">🔗</div>
+                <h3>Merge PDF</h3>
+                <p>Combine PDFs in the order you want with the easiest PDF merger available.</p>
+            </a>
+            <a href="tools/split-pdf.html" class="tool-card" data-category="organize">
+                <div class="icon-box red">✂️</div>
+                <h3>Split PDF</h3>
+                <p>Separate one page or a whole set for easy conversion into independent PDF files.</p>
+            </a>
+            <a href="tools/organize-pdf.html" class="tool-card" data-category="organize">
+                <div class="icon-box yellow">📂</div>
+                <h3>Architect PDF</h3>
+                <p>Sort, add and delete PDF pages. Drag and drop the page thumbnails and download.</p>
+            </a>
+            <a href="tools/scan-to-pdf.html" class="tool-card" data-category="organize">
+                <div class="icon-box purple">📸</div>
+                <h3>CamScanner</h3>
+                <p>Use your camera to capture documents and convert them directly into a PDF.</p>
+            </a>
+
+            <!-- Optimize -->
+            <a href="tools/compress-pdf.html" class="tool-card" data-category="optimize">
+                <div class="icon-box green">📉</div>
+                <h3>Compress PDF</h3>
+                <p>Reduce file size while optimizing for maximal PDF quality.</p>
+            </a>
+
+            <!-- Convert -->
+            <a href="tools/pdf-to-word.html" class="tool-card" data-category="convert">
+                <div class="icon-box blue">📄</div>
+                <h3>PDF to Word</h3>
+                <p>Convert your PDF files into easy to edit DOC and DOCX documents.</p>
+            </a>
+            <a href="tools/word-to-pdf.html" class="tool-card" data-category="convert">
+                <div class="icon-box blue">📝</div>
+                <h3>Word to PDF</h3>
+                <p>Convert DOC and DOCX files to PDF.</p>
+            </a>
+            <a href="tools/pdf-to-excel.html" class="tool-card" data-category="convert">
+                <div class="icon-box green">📊</div>
+                <h3>PDF to Excel</h3>
+                <p>Extract data from PDFs into Excel spreadsheets.</p>
+            </a>
+            <a href="tools/excel-to-pdf.html" class="tool-card" data-category="convert">
+                <div class="icon-box green">📉</div>
+                <h3>Excel to PDF</h3>
+                <p>Convert EXCEL spreadsheets to PDF.</p>
+            </a>
+            <a href="tools/pdf-to-jpg.html" class="tool-card" data-category="convert">
+                <div class="icon-box yellow">🖼️</div>
+                <h3>PDF to JPG</h3>
+                <p>Convert each PDF page into a JPG image.</p>
+            </a>
+            <a href="tools/jpg-to-pdf.html" class="tool-card" data-category="convert">
+                <div class="icon-box yellow">🖼️</div>
+                <h3>JPG to PDF</h3>
+                <p>Convert your JPG images to PDF.</p>
+            </a>
+            <a href="tools/extract-images.html" class="tool-card" data-category="convert">
+                <div class="icon-box yellow">📥</div>
+                <h3>Asset Ripper</h3>
+                <p>Rip every image out of your PDF and save them as high-quality assets.</p>
+            </a>
+
+            <!-- Edit -->
+            <a href="tools/rotate-pdf.html" class="tool-card" data-category="edit">
+                <div class="icon-box blue">↻</div>
+                <h3>Rotate Panorama</h3>
+                <p>Rotate your PDFs the way you need them.</p>
+            </a>
+            <a href="tools/page-numbers.html" class="tool-card" data-category="edit">
+                <div class="icon-box red">🔢</div>
+                <h3>Page Numbers</h3>
+                <p>Add page numbers to your PDF with custom positioning.</p>
+            </a>
+            <a href="tools/watermark-pdf.html" class="tool-card" data-category="edit">
+                <div class="icon-box purple">🔏</div>
+                <h3>Watermark PDF</h3>
+                <p>Stamp an image or text over your PDF.</p>
+            </a>
+            <a href="tools/redact-pdf.html" class="tool-card" data-category="edit">
+                <div class="icon-box red">⬛</div>
+                <h3>Redact PDF</h3>
+                <p>Permanently remove sensitive information from your documents.</p>
+            </a>
+            <a href="tools/crop-pdf.html" class="tool-card" data-category="edit">
+                <div class="icon-box blue">✂️</div>
+                <h3>Crop PDF</h3>
+                <p>Trim margins or cut out areas of your PDF pages.</p>
+            </a>
+            <a href="tools/sign-pdf.html" class="tool-card" data-category="edit">
+                <div class="icon-box pink">✍️</div>
+                <h3>Sign PDF</h3>
+                <p>Add your handwritten signature to the document.</p>
+            </a>
+            <a href="tools/edit-metadata.html" class="tool-card" data-category="edit">
+                <div class="icon-box blue">📋</div>
+                <h3>Metadata Studio</h3>
+                <p>Update Title, Author, and Keywords for better SEO and branding.</p>
+            </a>
+
+            <!-- Security -->
+            <a href="tools/unlock-pdf.html" class="tool-card" data-category="security">
+                <div class="icon-box grey">🔓</div>
+                <h3>Unlock PDF</h3>
+                <p>Remove PDF password security.</p>
+            </a>
+            <a href="tools/protect-pdf.html" class="tool-card" data-category="security">
+                <div class="icon-box grey">🔒</div>
+                <h3>Protect PDF</h3>
+                <p>Encrypt your PDF with a password.</p>
+            </a>
+
+            <!-- Convert (Additional) -->
+            <a href="tools/html-to-pdf.html" class="tool-card" data-category="convert">
+                <div class="icon-box green">🌐</div>
+                <h3>Web to Canvas</h3>
+                <p>Convert websites or HTML code to PDF.</p>
+            </a>
+        </main>
+
+        <script src="js/theme.js?v=100"></script>
+        <script src="js/dashboard.js"></script>
+
+        <footer>
+            <p>© 2026 PDFPals | Simple. Secure. Free.</p>
+        </footer>
+    </div>
+</body>
+
+</html>

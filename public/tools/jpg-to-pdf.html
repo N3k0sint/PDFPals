@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDFPals - JPG to PDF</title>
+    <link rel="stylesheet" href="../css/main.css?v=100">
+    <link rel="stylesheet" href="../css/tool.css">
+    <script src="../vendor/pdf-lib/dist/pdf-lib.min.js"></script>
+    <script type="module" src="jpg-to-pdf.js"></script>
+    <style>
+        .preview-container {
+            max-width: 1000px;
+            margin: 0 auto 2rem;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2.5rem;
+            min-height: 200px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .controls-glass {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1.5rem 2.5rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .img-card {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+
+        .img-card img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        #file-count {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--primary);
+            background: rgba(var(--primary-rgb), 0.1);
+            padding: 6px 12px;
+            border-radius: 8px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .preview-container:not(.hidden) {
+            display: grid !important;
+            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+                <nav class="app-header">
+            <a href="../index.html" class="brand-logo">
+                <img src="../assets/icon.png" alt="PDFPals" style="height: 32px; vertical-align: middle; margin-right: 8px;"> PDFPals
+            </a>
+            <div class="tool-nav">
+                <button id="theme-toggle" aria-label="Toggle Theme">
+                    <span class="icon">☀️</span>
+                </button>
+                <a href="../index.html" class="btn back-link">Back to Menu</a>
+            </div>
+        </nav>
+
+        <header style="text-align: center; margin-bottom: 3rem; margin-top: 2rem;">
+            <h1 style="font-size: 2.8rem; margin-bottom: 1rem; background: linear-gradient(135deg, var(--text-main) 0%, var(--primary) 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">JPG to PDF</h1>
+            <p style="color: var(--text-muted); font-size: 1.1rem; max-width: 600px; margin: 0 auto;">Transform your photo gallery into a professional document archive instantly.</p>
+        </header>
+
+        <main>
+            <div id="drop-zone" class="drop-zone">
+                <div class="drop-content">
+                    <div class="icon-row" style="font-size: 3.5rem; margin-bottom: 1.5rem;">
+                        <span>📷</span>
+                        <span style="font-size: 2rem; margin: 0 1rem; opacity: 0.5;">➔</span>
+                        <span>📄</span>
+                    </div>
+                    <p style="font-size: 1.3rem; font-weight: 500;">Drop images here to convert</p>
+                    <p style="margin: 1rem 0;">or <label class="browse-btn">Browse Gallery</label></p>
+                    <input type="file" id="file-input" accept="image/jpeg, image/png" multiple hidden>
+                </div>
+            </div>
+
+            <div id="image-list" class="preview-container hidden">
+                <!-- Images will be rendered here -->
+            </div>
+
+            <div id="controls" class="controls-glass hidden">
+                <span id="file-count">0 images selected</span>
+                <div style="display:flex; gap:1.2rem; align-items:center;">
+                    <button id="change-pdf-btn" class="btn secondary outline small" style="border-radius: 12px;">Reset</button>
+                    <button id="convert-btn" class="btn primary" style="border-radius: 12px; padding: 1rem 2rem; font-weight: 700;">Generate PDF ➔</button>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 PDFPals. Locally processed, secure & private.</p>
+        </footer>
+    </div>
+    <script src="../js/theme.js?v=99"></script>
+    <script src="../js/mobile-bridge.js"></script>
+    <script type="module" src="jpg-to-pdf.js"></script>
+</body>
+
+</html>
+
+

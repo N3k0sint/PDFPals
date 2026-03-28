@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PDFPals</string>
+    <string name="title_activity_main">PDFPals</string>
+    <string name="package_name">com.pdfutilities.app</string>
+    <string name="custom_url_scheme">com.pdfutilities.app</string>
+</resources>

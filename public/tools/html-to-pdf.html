@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDFPals - Web to Canvas</title>
+    <link rel="stylesheet" href="../css/main.css?v=100">
+    <link rel="stylesheet" href="../css/tool.css">
+    <style>
+        .converter-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 360px;
+            gap: 2rem;
+            animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .input-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 28px;
+            padding: 2.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            min-height: 700px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .editor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .editor-header span {
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            color: var(--primary);
+        }
+
+        #html-input {
+            flex-grow: 1;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            color: #fff;
+            font-family: 'Fira Code', monospace;
+            font-size: 1rem;
+            line-height: 1.6;
+            resize: none;
+            transition: all 0.3s;
+        }
+
+        #html-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(0, 0, 0, 0.4);
+            box-shadow: 0 0 20px rgba(var(--primary-rgb), 0.1);
+        }
+
+        .sidebar-section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 28px;
+            padding: 2.5rem;
+            height: fit-content;
+            position: sticky;
+            top: 2rem;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+        }
+
+        select, input {
+            background: rgba(0, 0, 0, 0.3) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            color: #fff !important;
+            border-radius: 12px !important;
+            padding: 12px 1rem !important;
+            width: 100%;
+        }
+
+        .conversion-tip {
+            background: rgba(var(--primary-rgb), 0.05);
+            border: 1px solid rgba(var(--primary-rgb), 0.1);
+            border-radius: 16px;
+            padding: 1.2rem;
+            margin-bottom: 2rem;
+        }
+
+        .conversion-tip p {
+            font-size: 0.85rem;
+            line-height: 1.5;
+            margin: 0;
+            opacity: 0.8;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 1100px) {
+            .converter-container {
+                grid-template-columns: 1fr;
+                padding: 1.5rem;
+            }
+            .sidebar-section {
+                position: static;
+                margin-top: 2rem;
+                width: 100%;
+            }
+            .input-panel {
+                min-height: 400px;
+                padding: 1.5rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-header {
+                flex-direction: column;
+                height: auto;
+                padding: 1.5rem;
+                gap: 1.5rem;
+            }
+            .tool-nav {
+                width: 100%;
+                justify-content: space-between;
+            }
+            header h1 {
+                font-size: 2.2rem !important;
+            }
+            header p {
+                font-size: 1.1rem !important;
+            }
+            #html-input {
+                font-size: 0.9rem;
+                min-height: 300px;
+            }
+        }
+    </style>
+    <!-- Essential Libraries -->
+    <script src="../vendor/pdf-lib/dist/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="../vendor/pdfjs-dist/build/pdf.mjs" type="module"></script>
+    <script type="module" src="html-to-pdf.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <nav class="app-header">
+            <a href="../index.html" class="brand-logo">
+                <img src="../assets/icon.png" alt="PDFPals" style="height: 32px; vertical-align: middle; margin-right: 8px;"> PDFPals
+            </a>
+            <div class="tool-nav">
+                <button id="theme-toggle" aria-label="Toggle Theme">
+                    <span class="icon">☀️</span>
+                </button>
+                <a href="../index.html" class="btn back-link">Back to Menu</a>
+            </div>
+        </nav>
+
+        <header style="text-align: center; margin-bottom: 4rem; margin-top: 2rem;">
+            <h1 style="font-size: 3.2rem; margin-bottom: 1.2rem; background: linear-gradient(135deg, var(--text-main) 0%, var(--primary) 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px;">Web to Canvas</h1>
+            <p style="color: var(--text-muted); font-size: 1.25rem; max-width: 700px; margin: 0 auto; line-height: 1.6;">Transform raw markup into professional PDF layouts. Build, style, and export with instantaneous local rendering.</p>
+        </header>
+
+        <main>
+            <div class="converter-container">
+                <div class="input-panel">
+                    <div class="editor-header">
+                        <span>Source Engine</span>
+                        <div class="editor-actions" style="display: flex; gap: 0.8rem;">
+                            <button id="clear-editor" class="btn secondary sm" style="border-radius: 8px; padding: 6px 14px;">Clear</button>
+                            <button id="load-example" class="btn secondary sm" style="border-radius: 8px; padding: 6px 14px;">Example</button>
+                        </div>
+                    </div>
+                    <textarea id="html-input"
+                        placeholder="<html>
+  <body>
+    <h1>Local Rendering</h1>
+    <p>Build your document using HTML/CSS.</p>
+  </body>
+</html>"></textarea>
+                </div>
+
+                <aside class="sidebar-section">
+                    <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem;">
+                        <h2 style="margin:0; font-size: 1.3rem; letter-spacing: -0.5px;">Engine Config</h2>
+                        <button id="reset-editor-btn" class="btn secondary outline small" style="border-radius: 8px;">Reset</button>
+                    </div>
+
+                    <div class="setting-group" style="margin-bottom: 1.5rem;">
+                        <label style="display: block; margin-bottom: 0.8rem; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--primary);">Dimensions</label>
+                        <select id="page-size" style="margin-bottom: 1rem;">
+                            <option value="a4">A4 (Standard)</option>
+                            <option value="letter">Letter</option>
+                            <option value="legal">Legal</option>
+                        </select>
+                        <select id="orientation">
+                            <option value="portrait">Portrait</option>
+                            <option value="landscape">Landscape</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-group" style="margin-bottom: 2.5rem;">
+                        <label style="display: block; margin-bottom: 0.8rem; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--primary);">Margins</label>
+                        <select id="margin">
+                            <option value="20">Standard (20px)</option>
+                            <option value="0">Zero (0px)</option>
+                            <option value="40">Maximum (40px)</option>
+                        </select>
+                    </div>
+
+                    <div class="conversion-tip">
+                        <p><strong>Pro Tip:</strong> Use modern CSS Grid or Flexbox. All assets are processed 100% locally for maximum privacy.</p>
+                    </div>
+
+                    <button id="convert-html" class="btn primary full-width action-btn" style="padding: 1rem; border-radius: 12px; font-weight: 700; font-size: 1rem;">Render & Export ➔</button>
+                </aside>
+            </div>
+
+            <!-- Preview/Hidden Rendering Area -->
+            <div id="render-area" class="hidden-render"></div>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 PDFPals. Locally processed, secure & private.</p>
+        </footer>
+    </div>
+    <script src="../js/theme.js?v=100"></script>
+</body>
+
+</html>
+

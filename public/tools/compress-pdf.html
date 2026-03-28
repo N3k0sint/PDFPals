@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDFPals - Compress PDF</title>
+    <link rel="stylesheet" href="../css/main.css?v=100">
+    <link rel="stylesheet" href="../css/tool.css">
+    <style>
+        .watermark-workspace {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 2.5rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .document-section {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 3rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 400px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .sidebar-section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 28px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 2.5rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+            height: fit-content;
+        }
+
+        .radio-option {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .radio-option:hover {
+            background: rgba(255, 255, 255, 0.03);
+            border-color: rgba(var(--primary-rgb), 0.3);
+        }
+
+        .radio-option input {
+            display: none;
+        }
+
+        .radio-option.active {
+            border-color: var(--primary);
+            background: rgba(var(--primary-rgb), 0.1);
+            box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.15);
+        }
+
+        .radio-option.active::after {
+            content: '✓';
+            position: absolute;
+            top: 1.25rem;
+            right: 1.25rem;
+            color: var(--primary);
+            font-weight: 800;
+        }
+
+        .radio-option strong {
+            display: block;
+            font-size: 1.1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .radio-option span {
+            font-size: 0.85rem;
+            opacity: 0.6;
+        }
+
+        #progress-container {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            border: 1px solid rgba(var(--primary-rgb), 0.2);
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+
+        #progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), #fff);
+            width: 0%;
+            transition: width 0.4s cubic-bezier(0.1, 0.7, 0.1, 1);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .watermark-workspace:not(.hidden) {
+            display: grid !important;
+            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+    </style>
+    <script src="../vendor/pdf-lib/dist/pdf-lib.min.js"></script>
+    <script type="module" src="compress-pdf.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <nav class="app-header">
+            <a href="../index.html" class="brand-logo">
+                <img src="../assets/icon.png" alt="PDFPals" style="height: 32px; vertical-align: middle; margin-right: 8px;"> PDFPals
+            </a>
+            <div class="tool-nav">
+                <button id="theme-toggle" aria-label="Toggle Theme">
+                    <span class="icon">☀️</span>
+                </button>
+                <a href="../index.html" class="btn back-link">Back to Menu</a>
+            </div>
+        </nav>
+
+        <header style="text-align: center; margin-bottom: 3rem; margin-top: 2rem;">
+            <h1 style="font-size: 2.8rem; margin-bottom: 1rem; background: linear-gradient(135deg, var(--text-main) 0%, var(--primary) 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Neural Compress</h1>
+            <p style="color: var(--text-muted); font-size: 1.1rem; max-width: 600px; margin: 0 auto;">Shrink your files for faster sharing without sacrificing critical document clarity.</p>
+        </header>
+
+        <main>
+            <div id="drop-zone" class="drop-zone">
+                <div class="drop-content">
+                    <div class="icon-row" style="font-size: 3.5rem; margin-bottom: 1.5rem;">
+                        <span>📉</span>
+                    </div>
+                    <p style="font-size: 1.3rem; font-weight: 500;">Drop PDF to optimize size</p>
+                    <p style="margin: 1rem 0;">or <label class="browse-btn">Pick Local File</label></p>
+                    <input type="file" id="file-input" accept=".pdf" hidden>
+                </div>
+            </div>
+
+            <div id="workspace" class="watermark-workspace hidden">
+                <div class="document-section">
+                    <div id="file-preview" class="file-preview" style="text-align: center;">
+                        <div class="file-icon" style="font-size: 6rem; margin-bottom: 1rem;">📄</div>
+                        <div id="file-name" class="file-name" style="font-weight: 600; font-size: 1.2rem;">filename.pdf</div>
+                        <div id="file-size" style="margin-top: 0.5rem; font-size: 0.9rem; opacity: 0.5; font-family: monospace;"></div>
+                        <button id="change-pdf-btn" class="btn secondary outline small" style="margin-top:2.5rem; border-radius: 10px;">Switch Document</button>
+                    </div>
+                </div>
+
+                <aside class="sidebar-section" id="sidebar">
+                    <h2 style="font-size: 1.4rem; font-weight: 700; margin-bottom: 2rem;">Compression Engine</h2>
+
+                    <div class="setting-group" id="comp-options">
+                        <div class="radio-option" data-val="extreme">
+                            <input type="radio" id="comp-extreme" name="compression" value="extreme">
+                            <strong>Extreme Compression</strong>
+                            <span>Maximum shrink, lower resolution</span>
+                        </div>
+                        <div class="radio-option active" data-val="recommended">
+                            <input type="radio" id="comp-recommended" name="compression" value="recommended" checked>
+                            <strong>High Fidelity</strong>
+                            <span>Perfect balance of size & clarity</span>
+                        </div>
+                        <div class="radio-option" data-val="less">
+                            <input type="radio" id="comp-less" name="compression" value="less">
+                            <strong>Soft Compression</strong>
+                            <span>Native quality, minimal reduction</span>
+                        </div>
+                    </div>
+
+                    <div id="progress-container" class="hidden">
+                        <div style="font-weight: 600; font-size: 0.9rem;" id="progress-text">Neural optimization in progress...</div>
+                        <div class="progress-bar-bg">
+                            <div id="progress-bar"></div>
+                        </div>
+                    </div>
+
+                    <button id="apply-btn" class="btn primary full-width action-btn" style="padding: 1.2rem; font-weight: 700; border-radius: 12px; margin-top: 1rem;">Start Compression ➔</button>
+                </aside>
+            </div>
+        </main>
+        </main>
+
+        </footer>
+    </div>
+    <script src="../js/theme.js?v=100"></script>
+</body>
+
+</html>
+
+
+

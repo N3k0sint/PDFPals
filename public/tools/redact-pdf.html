@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDFPals - Redact PDF</title>
+    <link rel="stylesheet" href="../css/main.css?v=100">
+    <link rel="stylesheet" href="../css/tool.css">
+    <style>
+        .redact-workspace {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 2rem;
+            animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .preview-panel {
+            background: rgba(var(--bg-rgb), 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 80vh;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            overflow-y: auto; /* Fix scrolling */
+        }
+
+        .sidebar-section {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            padding: 2.5rem;
+            height: fit-content;
+            position: sticky;
+            top: 2rem;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+        }
+
+        .redaction-container {
+            position: relative;
+            box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+            border-radius: 4px;
+            width: 100%; /* Stretch completely to available flex width */
+            max-width: 1000px; /* Optional cap so it doesn't get ridiculously huge on 4k */
+            background: #fff;
+        }
+
+        .redact-overlay {
+            background: transparent;
+            border: 1.5px solid var(--primary);
+            cursor: crosshair;
+            box-shadow: inset 0 0 10px rgba(var(--primary-rgb), 0.2);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            overflow: hidden;
+        }
+        
+        .page-wrapper {
+            position: relative;
+            margin-bottom: 2rem;
+            width: 100%;
+        }
+        
+        .page-wrapper canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .redaction-rect {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1.5px solid #ff4757;
+            cursor: move;
+            z-index: 20;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        .redact-close {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 20px;
+            height: 20px;
+            background: #ff4757;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            cursor: pointer;
+            z-index: 30;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .redact-overlay:hover {
+            box-shadow: 0 0 20px rgba(var(--primary-rgb), 0.4);
+        }
+
+        .redact-delete {
+            background: #ff4757;
+            color: #fff;
+            border: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: absolute;
+            top: -11px;
+            right: -11px;
+            transition: transform 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .redact-delete:hover {
+            transform: scale(1.2);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 1100px) {
+            .redact-workspace {
+                grid-template-columns: 1fr;
+                padding: 1.5rem;
+            }
+            .sidebar-section {
+                position: static;
+                margin-top: 2rem;
+                width: 100%;
+            }
+            .preview-panel {
+                min-height: 400px;
+                padding: 2rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-header {
+                flex-direction: column;
+                height: auto;
+                padding: 1.5rem;
+                gap: 1.5rem;
+            }
+            .tool-nav {
+                width: 100%;
+                justify-content: space-between;
+            }
+            header h1 {
+                font-size: 2.2rem !important;
+            }
+            header p {
+                font-size: 1.1rem !important;
+            }
+            .page-wrapper canvas {
+                max-width: 100%;
+                height: auto !important;
+            }
+        }
+    </style>
+    <!-- Essential Libraries -->
+    <script src="../vendor/pdf-lib/dist/pdf-lib.min.js"></script>
+    <script src="../vendor/pdfjs-dist/build/pdf.mjs" type="module"></script>
+    <script type="module" src="redact-pdf.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <nav class="app-header">
+            <a href="../index.html" class="brand-logo">
+                <img src="../assets/icon.png" alt="PDFPals" style="height: 32px; vertical-align: middle; margin-right: 8px;"> PDFPals
+            </a>
+            <div class="tool-nav">
+                <button id="theme-toggle" aria-label="Toggle Theme">
+                    <span class="icon">☀️</span>
+                </button>
+                <a href="../index.html" class="btn back-link">Back to Menu</a>
+            </div>
+        </nav>
+
+        <header style="text-align: center; margin-bottom: 4rem; margin-top: 2rem;">
+            <h1 style="font-size: 3.2rem; margin-bottom: 1.2rem; background: linear-gradient(135deg, var(--text-main) 0%, var(--primary) 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px;">Redact PDF</h1>
+            <p style="color: var(--text-muted); font-size: 1.25rem; max-width: 700px; margin: 0 auto; line-height: 1.6;">Permanently scrub sensitive information. Selection-based redaction with absolute local erasure.</p>
+        </header>
+
+        <main>
+            <div id="drop-zone" class="drop-zone">
+                <div class="drop-content">
+                    <div class="icon-row" style="font-size: 4rem; margin-bottom: 2rem;">
+                        <span>⬛</span>
+                    </div>
+                    <p style="font-size: 1.4rem; font-weight: 600;">Drop PDF to secure information</p>
+                    <p style="margin: 1.5rem 0; opacity: 0.6;">or <label class="browse-btn" style="text-decoration: underline;">Open Intelligence</label></p>
+                    <input type="file" id="file-input" accept=".pdf" hidden>
+                </div>
+            </div>
+
+            <div id="workspace" class="redact-workspace hidden">
+                <div class="preview-panel">
+                    <div id="redaction-container" class="redaction-container">
+                        <!-- PDF canvases will be rendered here -->
+                    </div>
+                </div>
+
+                <aside class="sidebar-section">
+                    <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem;">
+                        <h2 style="margin:0; font-size: 1.3rem; letter-spacing: -0.5px;">Security Options</h2>
+                        <button id="change-pdf-btn" class="btn secondary outline small" style="border-radius: 8px;">Switch</button>
+                    </div>
+
+                    <div class="info-card" style="background: var(--bg-main); padding: 1.2rem; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 2rem;">
+                        <p style="font-size: 0.85rem; margin: 0; line-height: 1.5; opacity: 0.7;">Select areas on any page to permanently blackout and remove underlying content.</p>
+                    </div>
+
+                    <div class="setting-group" style="margin-bottom: 2.5rem;">
+                        <button id="clear-redactions" class="btn secondary full-width" style="border-radius: 12px; background: var(--bg-main); border: 1px solid var(--border); margin-bottom: 1rem;">Clear All Selection</button>
+                        <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-main); font-size: 0.95rem; cursor: pointer; padding: 0.5rem; border-radius: 8px; background: rgba(var(--primary-rgb), 0.1);">
+                            <input type="checkbox" id="apply-all-checkbox" style="width: 18px; height: 18px; accent-color: var(--primary);">
+                            <strong>Apply to all pages</strong>
+                        </label>
+                    </div>
+
+                    <button id="apply-redactions" class="btn primary full-width action-btn" style="padding: 1rem; border-radius: 12px; font-weight: 700; font-size: 1rem;">Blackout & Save ➔</button>
+                </aside>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 PDFPals. Locally processed, secure & private.</p>
+        </footer>
+    </div>
+    <script src="../js/theme.js?v=101"></script>
+    <script src="../js/mobile-bridge.js"></script>
+</body>
+
+</html>

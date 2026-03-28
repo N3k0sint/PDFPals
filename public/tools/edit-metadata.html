@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDFPals - Metadata Studio</title>
+    <link rel="stylesheet" href="../css/main.css?v=100">
+    <link rel="stylesheet" href="../css/tool.css">
+    <style>
+        .metadata-form {
+            max-width: 650px;
+            margin: 2rem auto;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 3rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .form-group {
+            margin-bottom: 2rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.75rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--primary);
+            opacity: 0.8;
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            color: #fff;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            height: 100px;
+        }
+
+        .form-group input:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(0, 0, 0, 0.3);
+            box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.1);
+        }
+
+        .seo-tip {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding-left: 0.5rem;
+        }
+
+        .seo-tip i { font-style: normal; opacity: 0.8; }
+
+        .branding-section {
+            padding: 1.5rem;
+            background: rgba(var(--primary-rgb), 0.1);
+            border-radius: 15px;
+            margin-bottom: 2.5rem;
+            border: 1px solid rgba(var(--primary-rgb), 0.2);
+        }
+    </style>
+    <!-- pdf-lib -->
+    <script src="../vendor/pdf-lib/dist/pdf-lib.min.js"></script>
+    <script type="module" src="edit-metadata.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <nav class="app-header">
+            <a href="../index.html" class="brand-logo">
+                <img src="../assets/icon.png" alt="PDFPals" style="height: 32px; vertical-align: middle; margin-right: 8px;"> PDFPals
+            </a>
+            <div class="tool-nav">
+                <button id="theme-toggle" aria-label="Toggle Theme">
+                    <span class="icon">☀️</span>
+                </button>
+                <a href="../index.html" class="btn back-link">Back to Menu</a>
+            </div>
+        </nav>
+
+        <header style="text-align: center; margin-bottom: 3rem; margin-top: 2rem;">
+            <h1 style="font-size: 2.5rem; margin-bottom: 1rem; background: linear-gradient(135deg, var(--text-main) 0%, var(--primary) 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Metadata Studio</h1>
+            <p style="color: var(--text-muted); font-size: 1.1rem; max-width: 600px; margin: 0 auto;">Refine SEO and branding by updating the hidden properties of your PDF documents with a single click.</p>
+        </header>
+
+        <main>
+            <div id="drop-zone" class="drop-zone">
+                <div class="drop-content">
+                    <div class="icon-row" style="font-size: 3rem; margin-bottom: 1.5rem;">
+                        <span>📋</span>
+                        <span style="opacity: 0.3; margin: 0 1rem;">➔</span>
+                        <span>🏷️</span>
+                    </div>
+                    <p style="font-size: 1.2rem; margin-bottom: 1rem;">Drag & Drop PDF here or <label class="browse-btn">Browse</label></p>
+                    <input type="file" id="file-input" accept="application/pdf" hidden>
+                    <p style="font-size: 0.85rem; opacity: 0.5;">Maximum security. 100% Local processing.</p>
+                </div>
+            </div>
+
+            <div id="workspace" class="workspace hidden">
+                <div class="metadata-form">
+                    <div class="branding-section">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label>Producer & Creator</label>
+                            <input type="text" value="PDFPals" disabled style="opacity: 0.6; cursor: not-allowed; border-style: dashed;">
+                            <p class="seo-tip">✨ <i>Automatically set to PDFPals for exclusive branding.</i></p>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="meta-title">Document Title</label>
+                        <input type="text" id="meta-title" placeholder="e.g. Portfolio - 2026 Creative Collection">
+                        <p class="seo-tip">🔍 <i>This title appears in browser tabs and search engine snippets.</i></p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="meta-author">Author</label>
+                        <input type="text" id="meta-author" placeholder="e.g. Design Agency Name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="meta-subject">Subject</label>
+                        <textarea id="meta-subject" placeholder="A brief summary of what this document contains..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="meta-keywords">Keywords (Tags)</label>
+                        <input type="text" id="meta-keywords" placeholder="services, portfolio, showcase, branding">
+                        <p class="seo-tip">🏷️ <i>Separate keywords with commas for best search discoverability.</i></p>
+                    </div>
+
+                    <div class="controls" style="margin-top: 3rem; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 2rem; display: flex; justify-content: space-between; align-items: center; background: rgba(0, 0, 0, 0.2); padding: 1.5rem; border-radius: 15px;">
+                        <span id="file-name" style="font-weight: 500; opacity: 0.8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 250px;">filename.pdf</span>
+                        <div style="display:flex; gap:1rem; align-items:center;">
+                            <button id="change-pdf-btn" class="btn secondary outline small" style="border-radius: 10px;">Change PDF</button>
+                            <button id="save-meta-btn" class="btn primary" style="border-radius: 10px; padding: 0.8rem 1.5rem;">Apply & Download ➔</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="loading" class="loading hidden">
+                <div class="spinner"></div>
+                <p>Applying metadata changes...</p>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 PDFPals. Locally processed, secure & private.</p>
+        </footer>
+    </div>
+    <script src="../js/theme.js?v=100"></script>
+</body>
+
+</html>

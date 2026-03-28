@@ -1,0 +1,91 @@
+.tool-workspace {
+    display: flex;
+    gap: 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.preview-panel {
+    flex: 1;
+    background: var(--bg-surface);
+    border-radius: var(--radius);
+    padding: 2rem;
+    border: 1px solid var(--border);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+}
+
+.lock-icon {
+    font-size: 5rem;
+    color: var(--text-muted);
+    opacity: 0.5;
+}
+
+.password-wrapper {
+    position: relative;
+    max-width: 300px;
+}
+
+.toggle-icon-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 6px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.2s, opacity 0.2s;
+    opacity: 0.6;
+}
+
+.toggle-icon-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="dark"] .toggle-icon-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.security-info {
+    background: rgba(234, 179, 8, 0.1);
+    border-left: 4px solid #eab308;
+    padding: 1rem;
+    margin: 1.5rem 0;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    color: var(--text-main);
+}
+
+.sidebar-section h2 {
+    margin-bottom: 1.5rem;
+}
+
+.action-btn {
+    margin-top: 1rem;
+}
+
+input[type="password"],
+input[type="text"] {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    padding: 0.75rem;
+    padding-right: 40px;
+    border-radius: var(--radius);
+    font-size: 1rem;
+}
+
+input:focus {
+    outline: none;
+    border-color: var(--primary);
+}

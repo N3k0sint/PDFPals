@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDFPals - Excel to PDF</title>
+    <link rel="stylesheet" href="../css/main.css?v=100">
+    <link rel="stylesheet" href="../css/tool.css">
+    <!-- SheetJS for Excel -->
+    <script src="../vendor/xlsx/dist/xlsx.full.min.js"></script>
+    <style>
+        .sheet-preview {
+            background: white;
+            color: black;
+            padding: 2rem;
+            margin: 2rem auto;
+            overflow-x: auto;
+            width: 100%;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            font-family: 'Calibri', 'Segoe UI', sans-serif;
+            font-size: 11pt;
+        }
+
+        td,
+        th {
+            border: 1px solid #e2e8f0;
+            padding: 4px 8px;
+            text-align: left;
+        }
+
+        tr:first-child td {
+            font-weight: bold;
+            background-color: #f1f5f9;
+            text-align: center;
+            border-bottom: 2px solid #cbd5e1;
+        }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+
+            #preview-container,
+            #preview-container * {
+                visibility: visible;
+            }
+
+            #preview-container {
+                position: absolute;
+                left: 0;
+                top: 0;
+                margin: 0;
+            }
+
+            .app-container {
+                padding: 0;
+                margin: 0;
+            }
+        }
+    </style>
+    <script type="module" src="excel-to-pdf.js"></script>
+    <style>
+        .workspace-card {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 3rem;
+            text-align: center;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .file-info-badge {
+            background: rgba(var(--primary-rgb), 0.1);
+            border: 1px solid rgba(var(--primary-rgb), 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            display: inline-block;
+            width: 100%;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .workspace:not(.hidden) {
+            display: block !important;
+            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+    </style>
+    <script src="../vendor/xlsx/xlsx.full.min.js"></script>
+    <script src="../vendor/pdf-lib/dist/pdf-lib.min.js"></script>
+    <script src="../vendor/html2pdf.bundle.min.js"></script>
+    
+</head>
+
+<body>
+    <div class="app-container">
+        <nav class="app-header">
+            <a href="../index.html" class="brand-logo">
+                <img src="../assets/icon.png" alt="PDFPals" style="height: 32px; vertical-align: middle; margin-right: 8px;"> PDFPals
+            </a>
+            <div class="tool-nav">
+                <button id="theme-toggle" aria-label="Toggle Theme">
+                    <span class="icon">☀️</span>
+                </button>
+                <a href="../index.html" class="btn back-link">Back to Menu</a>
+            </div>
+        </nav>
+
+        <header style="text-align: center; margin-bottom: 3rem; margin-top: 2rem;">
+            <h1 style="font-size: 2.8rem; margin-bottom: 1rem; background: linear-gradient(135deg, var(--text-main) 0%, var(--primary) 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Excel to PDF</h1>
+            <p style="color: var(--text-muted); font-size: 1.1rem; max-width: 600px; margin: 0 auto;">Transform spreadsheets and data tables into professional reports instantly.</p>
+        </header>
+
+        <main>
+            <div id="drop-zone" class="drop-zone">
+                <div class="drop-content">
+                    <div class="icon-row" style="font-size: 3.5rem; margin-bottom: 1.5rem;">
+                        <span>📊</span>
+                        <span style="font-size: 2rem; margin: 0 1rem; opacity: 0.5;">➔</span>
+                        <span>📄</span>
+                    </div>
+                    <p style="font-size: 1.3rem; font-weight: 500;">Drop Excel file here</p>
+                    <p style="margin: 1rem 0;">or <label class="browse-btn">Open File Manager</label></p>
+                    <input type="file" id="file-input" accept=".xlsx, .xls" hidden>
+                </div>
+            </div>
+
+            <div id="workspace" class="workspace hidden">
+                <div class="workspace-card">
+                    <div class="file-info-badge">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
+                        <h3 id="file-name" style="margin:0; font-size: 1.2rem;">filename.xlsx</h3>
+                    </div>
+                    <div style="display:flex; gap:1.2rem; justify-content: center;">
+                        <button id="change-pdf-btn" class="btn secondary outline" style="border-radius: 12px; padding: 0.8rem 1.5rem;">Reset</button>
+                        <button id="convert-btn" class="btn primary" style="border-radius: 12px; padding: 0.8rem 2.5rem; font-weight: 700;">Convert to PDF ➔</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="preview-container" class="preview-container hidden">
+                <div id="preview-content" class="sheet-preview"></div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 PDFPals. Locally processed, secure & private.</p>
+        </footer>
+    </div>
+    <script src="../js/theme.js?v=100"></script>
+</body>
+
+</html>
+
+
