@@ -10,7 +10,7 @@ PDFPals is built using **Capacitor**, which means you can easily turn this web s
 *   **Capacitor CLI**: Already included in your `package.json`.
 
 > [!IMPORTANT]
-> **ALWAYS** run these commands from the main folder (`D:\AntiGrav\PDF Scanner`), **NOT** from inside the `android` folder.
+> **ALWAYS** run these commands from the main folder (`D:\Your Folder\PDFPals`), **NOT** from inside the `android` folder.
 
 ## 🤖 Building for Android (.APK)
 
