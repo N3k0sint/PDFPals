@@ -4,7 +4,7 @@ You can turn your local PDFPals suite into a standalone Windows application (.ex
 
 ## 🛠️ How to Build the Software
 
-1.  **Open your terminal** in the `PDF Scanner` folder.
+1.  **Open your terminal** in the `PDFPals` folder.
 2.  **Run the build command**:
     ```bash
     npm run build:win
