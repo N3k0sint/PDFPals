@@ -236,9 +236,16 @@
 
                     <div class="setting-group" style="margin-bottom: 2.5rem;">
                         <button id="clear-redactions" class="btn secondary full-width" style="border-radius: 12px; background: var(--bg-main); border: 1px solid var(--border); margin-bottom: 1rem;">Clear All Selection</button>
-                        <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-main); font-size: 0.95rem; cursor: pointer; padding: 0.5rem; border-radius: 8px; background: rgba(var(--primary-rgb), 0.1);">
+                        <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-main); font-size: 0.95rem; cursor: pointer; padding: 0.5rem; border-radius: 8px; background: rgba(var(--primary-rgb), 0.1); margin-bottom: 0.5rem;">
                             <input type="checkbox" id="apply-all-checkbox" style="width: 18px; height: 18px; accent-color: var(--primary);">
                             <strong>Apply to all pages</strong>
+                        </label>
+                        <label style="display: flex; align-items: flex-start; gap: 0.5rem; color: #ff4757; font-size: 0.95rem; cursor: pointer; padding: 0.5rem; border-radius: 8px; background: rgba(255, 71, 87, 0.1);">
+                            <input type="checkbox" id="sanitize-checkbox" checked style="width: 18px; height: 18px; accent-color: #ff4757; margin-top: 2px;">
+                            <div style="display:flex; flex-direction: column;">
+                                <strong>Sanitize (Burn Text)</strong>
+                                <span style="font-size: 0.75rem; opacity: 0.8; line-height: 1.2; margin-top: 2px;">Flattens layers into an image to prevent AIs from reading data underneath the black box.</span>
+                            </div>
                         </label>
                     </div>
 

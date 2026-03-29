@@ -12,6 +12,7 @@ const clearBtn = document.getElementById('clear-redactions');
 const applyBtn = document.getElementById('apply-redactions');
 const changePdfBtn = document.getElementById('change-pdf-btn');
 const applyAllCheckbox = document.getElementById('apply-all-checkbox');
+const sanitizeCheckbox = document.getElementById('sanitize-checkbox');
 
 let pdfBytes = null;
 let pdfDoc = null;
@@ -259,8 +260,49 @@ applyBtn.addEventListener('click', async () => {
         pdfDocRedact.setProducer('PDFPals');
         pdfDocRedact.setCreator('PDFPals');
         const outBytes = await pdfDocRedact.save();
-        const blob = new Blob([outBytes], { type: 'application/pdf' });
-        await MobileBridge.saveFile(blob, 'redacted_document.pdf');
+
+        if (sanitizeCheckbox && sanitizeCheckbox.checked) {
+            applyBtn.textContent = 'Sanitizing...';
+            const flatPdf = await window.PDFLib.PDFDocument.create();
+            const loadingTask = pdfjsLib.getDocument({ data: outBytes });
+            const tempPdf = await loadingTask.promise;
+            
+            for (let i = 1; i <= tempPdf.numPages; i++) {
+                const page = await tempPdf.getPage(i);
+                const scale = 2.0; // High quality rasterization
+                const viewport = page.getViewport({ scale });
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                
+                await page.render({ canvasContext: ctx, viewport }).promise;
+                
+                const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                const base64Data = imgData.split(',')[1];
+                const binaryData = atob(base64Data);
+                const array = new Uint8Array(binaryData.length);
+                for (let j = 0; j < binaryData.length; j++) array[j] = binaryData.charCodeAt(j);
+                
+                const embeddedImage = await flatPdf.embedJpg(array);
+                const newPage = flatPdf.addPage([embeddedImage.width, embeddedImage.height]);
+                newPage.drawImage(embeddedImage, {
+                    x: 0,
+                    y: 0,
+                    width: embeddedImage.width,
+                    height: embeddedImage.height,
+                });
+            }
+            
+            flatPdf.setProducer('PDFPals');
+            flatPdf.setCreator('PDFPals');
+            const flatBytes = await flatPdf.save();
+            const blob = new Blob([flatBytes], { type: 'application/pdf' });
+            await MobileBridge.saveFile(blob, 'sanitized_redacted_document.pdf');
+        } else {
+            const blob = new Blob([outBytes], { type: 'application/pdf' });
+            await MobileBridge.saveFile(blob, 'redacted_document.pdf');
+        }
     } catch (e) {
         console.error('Redaction failed:', e);
         alert('Failed to redact PDF: ' + e.message);
