@@ -5,7 +5,8 @@ const fileListContainer = document.getElementById('file-list-container');
 const controls = document.getElementById('controls');
 const convertBtn = document.getElementById('convert-btn');
 const fileCountSpan = document.getElementById('file-count');
-const changeImagesBtn = document.getElementById('change-images-btn');
+const changeImagesBtn = document.getElementById('change-pdf-btn');
+const convertSeparateBtn = document.getElementById('convert-separate-btn');
 
 let selectedFiles = [];
 
@@ -34,6 +35,7 @@ fileInput.addEventListener('change', (e) => {
 });
 
 convertBtn.addEventListener('click', convertToPDF);
+if (convertSeparateBtn) convertSeparateBtn.addEventListener('click', convertToSeparatePDFs);
 
 function addFiles(files) {
     if (files.length === 0) return;
@@ -120,6 +122,39 @@ async function convertToPDF() {
     newPdf.setCreator('PDFPals');
     const pdfBytes = await newPdf.save();
     downloadPDF(pdfBytes, 'images_converted.pdf');
+}
+
+async function convertToSeparatePDFs() {
+    if (selectedFiles.length === 0) return;
+
+    for (const file of selectedFiles) {
+        const newPdf = await window.PDFLib.PDFDocument.create();
+        const arrayBuffer = await file.arrayBuffer();
+        let image;
+
+        if (file.type === 'image/jpeg') {
+            image = await newPdf.embedJpg(arrayBuffer);
+        } else if (file.type === 'image/png') {
+            image = await newPdf.embedPng(arrayBuffer);
+        } else {
+            continue; // Skip unsupported
+        }
+
+        const page = newPdf.addPage([image.width, image.height]);
+        page.drawImage(image, {
+            x: 0,
+            y: 0,
+            width: image.width,
+            height: image.height,
+        });
+
+        newPdf.setProducer('PDFPals');
+        newPdf.setCreator('PDFPals');
+        const pdfBytes = await newPdf.save();
+        
+        const fileName = file.name.replace(/\.[^/.]+$/, "") + ".pdf";
+        await downloadPDF(pdfBytes, fileName);
+    }
 }
 
 async function downloadPDF(pdfBytes, filename) {

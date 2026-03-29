@@ -161,7 +161,6 @@ function downloadAllAsZip() {
 }
 
 function resetApp() {
-    currentPdf = null;
     renderedPages = [];
     fileInput.value = '';
     previewContainer.innerHTML = '';
