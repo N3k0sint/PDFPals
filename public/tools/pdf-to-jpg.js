@@ -144,6 +144,13 @@ async function downloadSinglePage(pageNum, dataUrl, filePrefix) {
 function downloadAllAsZip() {
     if (renderedPages.length === 0) return;
 
+    if (renderedPages.length === 1) {
+        // Direct download
+        const page = renderedPages[0];
+        downloadSinglePage(page.pageNum, page.data, page.filePrefix);
+        return;
+    }
+
     const zip = new JSZip();
     const folder = zip.folder("images");
 
