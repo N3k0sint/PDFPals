@@ -1,12 +1,13 @@
 const dropZone = document.getElementById('drop-zone');
 const fileInput = document.getElementById('file-input');
 const browseBtn = document.querySelector('.browse-btn');
-const controls = document.getElementById('controls');
+const workspace = document.getElementById('workspace');
 const previewContainer = document.getElementById('preview-container');
 const previewContent = document.getElementById('preview-content'); // Used as container
 const fileNameSpan = document.getElementById('file-name');
-const printBtn = document.getElementById('print-btn');
-const changeWordBtn = document.getElementById('change-word-btn');
+// const printBtn = document.getElementById('print-btn');
+const changeWordBtn = document.getElementById('change-pdf-btn');
+const convertBtn = document.getElementById('convert-btn');
 
 // Event Listeners
 dropZone.addEventListener('dragover', (e) => {
@@ -36,14 +37,15 @@ fileInput.addEventListener('change', (e) => {
     if (file) handleFile(file);
 });
 
-printBtn.addEventListener('click', () => {
-    window.print();
+// printBtn removed
+convertBtn.addEventListener('click', () => {
+    window.print(); // Triggers the @media print CSS rules to save as PDF
 });
 
 function handleFile(file) {
     fileNameSpan.textContent = file.name;
     dropZone.classList.add('hidden');
-    controls.classList.remove('hidden');
+    workspace.classList.remove('hidden');
     previewContainer.classList.remove('hidden');
 
     const reader = new FileReader();
@@ -80,7 +82,7 @@ if (changeWordBtn) {
     changeWordBtn.onclick = () => {
         previewContent.innerHTML = '';
         dropZone.classList.remove('hidden');
-        controls.classList.add('hidden');
+        workspace.classList.add('hidden');
         previewContainer.classList.add('hidden');
         fileInput.value = '';
     };

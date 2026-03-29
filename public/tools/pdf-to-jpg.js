@@ -7,6 +7,7 @@ const dropZone = document.getElementById('drop-zone');
 const fileInput = document.getElementById('file-input');
 const browseBtn = document.querySelector('.browse-btn');
 const controls = document.getElementById('controls');
+const workspace = document.getElementById('workspace');
 const previewContainer = document.getElementById('preview-container');
 const loading = document.getElementById('loading');
 const fileNameDisplay = document.getElementById('file-name');
@@ -14,7 +15,7 @@ const pageCountDisplay = document.getElementById('page-count');
 const downloadAllBtn = document.getElementById('download-all-btn');
 const resetBtn = document.getElementById('reset-btn');
 
-let currentPdf = null;
+// Removed currentPdf, rely on local variables in handleFiles
 let renderedPages = []; // Stores data URLs
 
 // Event Listeners
@@ -30,44 +31,44 @@ dropZone.addEventListener('dragleave', () => {
 dropZone.addEventListener('drop', (e) => {
     e.preventDefault();
     dropZone.classList.remove('drag-over');
-    const file = e.dataTransfer.files[0];
-    if (file && file.type === 'application/pdf') {
-        handleFile(file);
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type === 'application/pdf');
+    if (files.length > 0) {
+        handleFiles(files);
     } else {
-        alert('Please upload a valid PDF file.');
+        alert('Please upload valid PDF files.');
     }
 });
 
-
-
 fileInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) handleFile(file);
+    const files = Array.from(e.target.files);
+    if (files.length > 0) handleFiles(files);
 });
 
 resetBtn.addEventListener('click', resetApp);
 
 downloadAllBtn.addEventListener('click', downloadAllAsZip);
 
-async function handleFile(file) {
+async function handleFiles(files) {
     resetApp();
     showLoading(true);
     dropZone.classList.add('hidden');
+    workspace.classList.remove('hidden');
     controls.classList.remove('hidden');
     previewContainer.classList.remove('hidden');
 
-    fileNameDisplay.textContent = file.name;
+    fileNameDisplay.textContent = `${files.length} PDF(s) loaded`;
 
     try {
-        const arrayBuffer = await file.arrayBuffer();
-        currentPdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+        for (const file of files) {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
 
-        pageCountDisplay.textContent = `${currentPdf.numPages} pages`;
-
-        // Render all pages
-        for (let i = 1; i <= currentPdf.numPages; i++) {
-            await renderPage(i);
+            // Render all pages for this pdf
+            for (let i = 1; i <= pdf.numPages; i++) {
+                await renderPage(pdf, i, file.name.replace('.pdf', ''));
+            }
         }
+        pageCountDisplay.textContent = `${renderedPages.length} pages total`;
     } catch (error) {
         console.error('Error loading PDF:', error);
         alert('Error parsing PDF file.');
@@ -77,8 +78,8 @@ async function handleFile(file) {
     }
 }
 
-async function renderPage(pageNum) {
-    const page = await currentPdf.getPage(pageNum);
+async function renderPage(pdf, pageNum, filePrefix) {
+    const page = await pdf.getPage(pageNum);
     const scale = 2.0; // High quality
     const viewport = page.getViewport({ scale });
 
@@ -98,7 +99,7 @@ async function renderPage(pageNum) {
 
     // Convert to Image for preview
     const imgDataUrl = canvas.toDataURL('image/jpeg', 0.9);
-    renderedPages.push({ pageNum, data: imgDataUrl });
+    renderedPages.push({ pageNum, data: imgDataUrl, filePrefix });
 
     // Create DOM elements
     const card = document.createElement('div');
@@ -120,7 +121,7 @@ async function renderPage(pageNum) {
     loadBtn.className = 'download-page-btn';
     loadBtn.innerHTML = '⬇️'; // Simple icon
     loadBtn.title = 'Download this page';
-    loadBtn.onclick = () => downloadSinglePage(pageNum, imgDataUrl);
+    loadBtn.onclick = () => downloadSinglePage(pageNum, imgDataUrl, filePrefix);
 
     footer.appendChild(pageNumSpan);
     footer.appendChild(loadBtn);
@@ -130,13 +131,13 @@ async function renderPage(pageNum) {
     previewContainer.appendChild(card);
 }
 
-async function downloadSinglePage(pageNum, dataUrl) {
+async function downloadSinglePage(pageNum, dataUrl, filePrefix) {
     const base64Data = dataUrl.split(',')[1];
     const binaryData = atob(base64Data);
     const array = new Uint8Array(binaryData.length);
     for (let i = 0; i < binaryData.length; i++) array[i] = binaryData.charCodeAt(i);
     const blob = new Blob([array], { type: 'image/jpeg' });
-    const fileName = `${fileNameDisplay.textContent.replace('.pdf', '')}_page_${pageNum}.jpg`;
+    const fileName = `${filePrefix}_page_${pageNum}.jpg`;
     await MobileBridge.saveFile(blob, fileName);
 }
 
@@ -149,12 +150,12 @@ function downloadAllAsZip() {
     renderedPages.forEach(page => {
         // Remove 'data:image/jpeg;base64,' prefix
         const base64Data = page.data.split(',')[1];
-        folder.file(`page_${page.pageNum}.jpg`, base64Data, { base64: true });
+        folder.file(`${page.filePrefix}_page_${page.pageNum}.jpg`, base64Data, { base64: true });
     });
 
     zip.generateAsync({ type: "blob" })
         .then(async function (content) {
-            const fileName = `${fileNameDisplay.textContent.replace('.pdf', '')}_images.zip`;
+            const fileName = `PDFPals_extracted_images.zip`;
             await MobileBridge.saveFile(content, fileName);
         });
 }
@@ -165,6 +166,7 @@ function resetApp() {
     fileInput.value = '';
     previewContainer.innerHTML = '';
     dropZone.classList.remove('hidden');
+    workspace.classList.add('hidden');
     controls.classList.add('hidden');
     previewContainer.classList.add('hidden');
     showLoading(false);
