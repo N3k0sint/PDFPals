@@ -1,7 +1,7 @@
 const dropZone = document.getElementById('drop-zone');
 const fileInput = document.getElementById('file-input');
 const browseBtn = document.querySelector('.browse-btn');
-const fileListContainer = document.getElementById('file-list-container');
+const fileListContainer = document.getElementById('image-list');
 const controls = document.getElementById('controls');
 const convertBtn = document.getElementById('convert-btn');
 const fileCountSpan = document.getElementById('file-count');
@@ -127,6 +127,29 @@ async function convertToPDF() {
 async function convertToSeparatePDFs() {
     if (selectedFiles.length === 0) return;
 
+    if (selectedFiles.length === 1) {
+        const file = selectedFiles[0];
+        const newPdf = await window.PDFLib.PDFDocument.create();
+        const arrayBuffer = await file.arrayBuffer();
+        let image;
+        if (file.type === 'image/jpeg') image = await newPdf.embedJpg(arrayBuffer);
+        else if (file.type === 'image/png') image = await newPdf.embedPng(arrayBuffer);
+        else return;
+
+        const page = newPdf.addPage([image.width, image.height]);
+        page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
+        newPdf.setProducer('PDFPals');
+        newPdf.setCreator('PDFPals');
+        const pdfBytes = await newPdf.save();
+        const fileName = file.name.replace(/\.[^/.]+$/, "") + ".pdf";
+        await downloadPDF(pdfBytes, fileName);
+        return;
+    }
+
+    // Multiple files -> Bundle into ZIP
+    const zip = new window.JSZip();
+    const folder = zip.folder("pdf_images");
+
     for (const file of selectedFiles) {
         const newPdf = await window.PDFLib.PDFDocument.create();
         const arrayBuffer = await file.arrayBuffer();
@@ -153,8 +176,13 @@ async function convertToSeparatePDFs() {
         const pdfBytes = await newPdf.save();
         
         const fileName = file.name.replace(/\.[^/.]+$/, "") + ".pdf";
-        await downloadPDF(pdfBytes, fileName);
+        folder.file(fileName, pdfBytes);
     }
+
+    zip.generateAsync({ type: "blob" })
+        .then(async function (content) {
+            await MobileBridge.saveFile(content, 'PDFPals_Separated_Images.zip');
+        });
 }
 
 async function downloadPDF(pdfBytes, filename) {

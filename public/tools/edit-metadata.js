@@ -13,6 +13,8 @@ const metaTitle = document.getElementById('meta-title');
 const metaAuthor = document.getElementById('meta-author');
 const metaSubject = document.getElementById('meta-subject');
 const metaKeywords = document.getElementById('meta-keywords');
+const metaCreationDate = document.getElementById('meta-creation-date');
+const metaModDate = document.getElementById('meta-mod-date');
 
 let pdfBytes = null;
 let currentFileName = '';
@@ -72,6 +74,17 @@ async function loadMetadata() {
         metaSubject.value = pdfDoc.getSubject() || '';
         metaKeywords.value = pdfDoc.getKeywords() || '';
 
+        const pad = n => n.toString().padStart(2, '0');
+        const cDate = pdfDoc.getCreationDate();
+        if (cDate) {
+            metaCreationDate.value = `${cDate.getFullYear()}-${pad(cDate.getMonth() + 1)}-${pad(cDate.getDate())}T${pad(cDate.getHours())}:${pad(cDate.getMinutes())}`;
+        }
+
+        const mDate = pdfDoc.getModificationDate();
+        if (mDate) {
+            metaModDate.value = `${mDate.getFullYear()}-${pad(mDate.getMonth() + 1)}-${pad(mDate.getDate())}T${pad(mDate.getHours())}:${pad(mDate.getMinutes())}`;
+        }
+
         workspace.classList.remove('hidden');
     } catch (err) {
         console.error(err);
@@ -99,18 +112,23 @@ saveMetaBtn.onclick = async () => {
         pdfDoc.setSubject(metaSubject.value);
         pdfDoc.setKeywords(metaKeywords.value.split(',').map(s => s.trim()).filter(s => s));
         
+        if (metaCreationDate.value) {
+            pdfDoc.setCreationDate(new Date(metaCreationDate.value));
+        }
+        if (metaModDate.value) {
+            pdfDoc.setModificationDate(new Date(metaModDate.value));
+        }
+
         // Branding (Automatic)
         pdfDoc.setCreator('PDFPals');
         pdfDoc.setProducer('PDFPals');
 
         const outBytes = await pdfDoc.save();
         const blob = new Blob([outBytes], { type: 'application/pdf' });
-        const url = URL.createObjectURL(blob);
         
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = currentFileName; // Keep name or maybe add suffix?
-        a.click();
+        if (typeof MobileBridge !== 'undefined') {
+            await MobileBridge.saveFile(blob, currentFileName);
+        }
 
         alert("Metadata updated successfully!");
     } catch (err) {
@@ -132,6 +150,8 @@ function resetUI() {
     metaAuthor.value = '';
     metaSubject.value = '';
     metaKeywords.value = '';
+    metaCreationDate.value = '';
+    metaModDate.value = '';
     workspace.classList.add('hidden');
     dropZone.classList.remove('hidden');
     fileInput.value = '';
