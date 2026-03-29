@@ -12,7 +12,7 @@ Experience a premium, high-fidelity interface with dynamic themes (Light, Dark, 
 ### 📂 Organize
 *   **Merge PDF**: Combine multiple documents with precision.
 *   **Split PDF**: Extract specific ranges or pages into new files.
-*   **Architect PDF (Organize)**: Drag-and-drop page reordering and multi-file assembly.
+*   **Organize PDF**: Drag-and-drop page reordering and multi-file assembly.
 *   **Rotate Panorama**: Fix orientation issues across your entire document.
 *   **Precision Crop**: Trim margins with pixel-perfect accuracy.
 
@@ -38,14 +38,26 @@ Experience a premium, high-fidelity interface with dynamic themes (Light, Dark, 
 
 ## 🚀 Getting Started
 
+To run PDFPals locally, you will need [Node.js](https://nodejs.org/) installed on your system.
+
+### 📦 Quick Setup
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/N3k0sint/PDFPals.git
+   cd PDFPals
+   ```
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+### 🌐 Local Web Server
+1.  **Start the server**: `npm start` (or `node server.js`)
+2.  **Access**: Navigate to `http://localhost:3000` in any modern browser.
+
 ### 🖥️ Desktop App
 1.  **Launch**: Run `npm run electron:start` to open the standalone desktop environment.
 2.  **Build**: Run `npm run build:win` to generate a portable `.exe` for distribution.
-
-### 🌐 Local Web Server
-1.  **Install**: `npm install`
-2.  **Start**: `npm start`
-3.  **Access**: Navigate to `http://localhost:3000` in any modern browser.
 
 ---
 

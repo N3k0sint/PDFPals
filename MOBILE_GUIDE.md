@@ -9,6 +9,7 @@ PDFPals is built using **Capacitor**, which means you can easily turn this web s
 *   **Android Studio** (for Android) or **Xcode** (for Mac/iOS).
 *   **Capacitor CLI**: Already included in your `package.json`.
 
+
 > [!IMPORTANT]
 > **ALWAYS** run these commands from the main folder (`D:\Your Folder\PDFPals`), **NOT** from inside the `android` folder.
 
