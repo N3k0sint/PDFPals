@@ -14,11 +14,20 @@ const fileNameDisplay = document.getElementById('file-name');
 const pageCountDisplay = document.getElementById('page-count');
 const downloadAllBtn = document.getElementById('download-all-btn');
 const resetBtn = document.getElementById('reset-btn');
+const addMoreBtn = document.getElementById('add-more-btn');
 
-// Removed currentPdf, rely on local variables in handleFiles
 let renderedPages = []; // Stores data URLs
+let loadedPdfNames = [];
+let isAddingMore = false;
 
 // Event Listeners
+if (addMoreBtn) {
+    addMoreBtn.addEventListener('click', () => {
+        isAddingMore = true;
+        fileInput.click();
+    });
+}
+
 dropZone.addEventListener('dragover', (e) => {
     e.preventDefault();
     dropZone.classList.add('drag-over');
@@ -33,7 +42,7 @@ dropZone.addEventListener('drop', (e) => {
     dropZone.classList.remove('drag-over');
     const files = Array.from(e.dataTransfer.files).filter(f => f.type === 'application/pdf');
     if (files.length > 0) {
-        handleFiles(files);
+        handleFiles(files, false);
     } else {
         alert('Please upload valid PDF files.');
     }
@@ -41,22 +50,32 @@ dropZone.addEventListener('drop', (e) => {
 
 fileInput.addEventListener('change', (e) => {
     const files = Array.from(e.target.files);
-    if (files.length > 0) handleFiles(files);
+    if (files.length > 0) handleFiles(files, isAddingMore);
+    isAddingMore = false;
+    fileInput.value = '';
 });
 
 resetBtn.addEventListener('click', resetApp);
 
 downloadAllBtn.addEventListener('click', downloadAllAsZip);
 
-async function handleFiles(files) {
-    resetApp();
+async function handleFiles(files, isAppend = false) {
+    if (!isAppend) {
+        resetApp();
+        loadedPdfNames = files.map(f => f.name);
+    } else {
+        files.forEach(f => {
+            loadedPdfNames.push(f.name);
+        });
+    }
+
     showLoading(true);
     dropZone.classList.add('hidden');
     workspace.classList.remove('hidden');
     controls.classList.remove('hidden');
     previewContainer.classList.remove('hidden');
 
-    fileNameDisplay.textContent = `${files.length} PDF(s) loaded`;
+    fileNameDisplay.textContent = `${loadedPdfNames.length} PDF(s) loaded`;
 
     try {
         for (const file of files) {
@@ -71,8 +90,8 @@ async function handleFiles(files) {
         pageCountDisplay.textContent = `${renderedPages.length} pages total`;
     } catch (error) {
         console.error('Error loading PDF:', error);
-        alert('Error parsing PDF file.');
-        resetApp();
+        alert('Error parsing PDF file: ' + (error.message || error));
+        if (!isAppend) resetApp();
     } finally {
         showLoading(false);
     }
@@ -118,10 +137,17 @@ async function renderPage(pdf, pageNum, filePrefix) {
     pageNumSpan.textContent = `Page ${pageNum}`;
 
     const loadBtn = document.createElement('button');
-    loadBtn.className = 'download-page-btn';
-    loadBtn.innerHTML = '⬇️'; // Simple icon
-    loadBtn.title = 'Download this page';
-    loadBtn.onclick = () => downloadSinglePage(pageNum, imgDataUrl, filePrefix);
+    loadBtn.className = 'single-dl-btn';
+    loadBtn.innerHTML = `
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>Download</span>
+    `;
+    loadBtn.title = `Download Page ${pageNum}`;
+    loadBtn.onclick = () => downloadSinglePage(pageNum, imgDataUrl, filePrefix, loadBtn);
 
     footer.appendChild(pageNumSpan);
     footer.appendChild(loadBtn);
@@ -131,7 +157,22 @@ async function renderPage(pdf, pageNum, filePrefix) {
     previewContainer.appendChild(card);
 }
 
-async function downloadSinglePage(pageNum, dataUrl, filePrefix) {
+async function downloadSinglePage(pageNum, dataUrl, filePrefix, btn) {
+    if (btn) {
+        btn.classList.add('success');
+        btn.innerHTML = `<span>✓</span> <span>Downloaded!</span>`;
+        setTimeout(() => {
+            btn.classList.remove('success');
+            btn.innerHTML = `
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                <span>Download</span>
+            `;
+        }, 2200);
+    }
     const base64Data = dataUrl.split(',')[1];
     const binaryData = atob(base64Data);
     const array = new Uint8Array(binaryData.length);
@@ -168,7 +209,9 @@ function downloadAllAsZip() {
 }
 
 function resetApp() {
+    loadedPdfNames = [];
     renderedPages = [];
+    isAddingMore = false;
     fileInput.value = '';
     previewContainer.innerHTML = '';
     dropZone.classList.remove('hidden');
@@ -183,7 +226,7 @@ function showLoading(show) {
     else loading.classList.add('hidden');
 }
 
-
-
-
-browseBtn.addEventListener('click', () => fileInput.click());
+browseBtn.addEventListener('click', () => {
+    isAddingMore = false;
+    fileInput.click();
+});

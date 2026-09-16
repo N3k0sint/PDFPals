@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="../css/tool.css">
     <script src="../vendor/pdf-lib/dist/pdf-lib.min.js"></script>
     <script src="../vendor/jszip/dist/jszip.min.js"></script>
-    <script type="module" src="jpg-to-pdf.js"></script>
     <style>
         .preview-container {
             max-width: 1000px;
@@ -42,16 +41,69 @@
         .img-card {
             background: rgba(0, 0, 0, 0.2);
             border-radius: 12px;
-            padding: 8px;
+            padding: 10px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .img-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--primary);
         }
 
         .img-card img {
             width: 100%;
-            height: 150px;
+            height: 140px;
             object-fit: cover;
             border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .single-dl-btn {
+            margin-top: 0.4rem;
+            padding: 6px 10px;
+            background: rgba(56, 189, 248, 0.12);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            border-radius: 8px;
+            color: #38bdf8;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            transition: all 0.2s ease;
+            width: 100%;
+            min-height: 30px;
+            user-select: none;
+        }
+
+        .single-dl-btn * {
+            pointer-events: none;
+        }
+
+        .single-dl-btn:hover {
+            background: #38bdf8;
+            color: #0f172a;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.25);
+        }
+
+        .single-dl-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .single-dl-btn.success {
+            background: rgba(34, 197, 94, 0.2);
+            border-color: rgba(34, 197, 94, 0.5);
+            color: #4ade80;
         }
 
         #file-count {
@@ -114,8 +166,9 @@
 
             <div id="controls" class="controls-glass hidden">
                 <span id="file-count">0 images selected</span>
-                <div style="display:flex; gap:1.2rem; align-items:center;">
+                <div style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap;">
                     <button id="change-pdf-btn" class="btn secondary outline small" style="border-radius: 12px;">Reset</button>
+                    <button id="add-more-btn" class="btn secondary outline small" style="border-radius: 12px;">+ Add More</button>
                     <button id="convert-btn" class="btn primary" style="border-radius: 12px; padding: 1rem 1.5rem; font-weight: 700;">Merge to 1 PDF</button>
                     <button id="convert-separate-btn" class="btn primary outline" style="border-radius: 12px; padding: 1rem 1.5rem; font-weight: 700;">Separate PDFs ➔</button>
                 </div>

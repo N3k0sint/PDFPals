@@ -4,6 +4,7 @@
         try {
             // 1. Initialize Theme
             const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
             document.body.setAttribute('data-theme', savedTheme);
 
             // 2. Find Toggle Button and Logo
@@ -32,9 +33,10 @@
                 toggleBtn.onclick = function (e) {
                     e.preventDefault();
 
-                    const currentTheme = document.body.getAttribute('data-theme');
+                    const currentTheme = document.documentElement.getAttribute('data-theme') || document.body.getAttribute('data-theme') || localStorage.getItem('theme') || 'light';
                     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
 
+                    document.documentElement.setAttribute('data-theme', newTheme);
                     document.body.setAttribute('data-theme', newTheme);
                     localStorage.setItem('theme', newTheme);
 

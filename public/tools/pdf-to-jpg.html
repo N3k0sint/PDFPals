@@ -65,6 +65,41 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+        .single-dl-btn {
+            padding: 5px 12px;
+            background: rgba(56, 189, 248, 0.12);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            border-radius: 8px;
+            color: #38bdf8;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            transition: all 0.2s ease;
+        }
+
+        .single-dl-btn:hover {
+            background: #38bdf8;
+            color: #0f172a;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(56, 189, 248, 0.25);
+        }
+
+        .single-dl-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .single-dl-btn.success {
+            background: rgba(34, 197, 94, 0.2);
+            border-color: rgba(34, 197, 94, 0.5);
+            color: #4ade80;
+        }
+
         .workspace-active:not(.hidden) {
             display: block !important;
             animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
@@ -112,8 +147,9 @@
                         <span id="file-name" style="font-weight: 700; color: #fff; font-size: 1.1rem;">filename.pdf</span>
                         <span id="page-count" style="color: var(--primary); font-size: 0.9rem; font-weight: 600;">0 pages identified</span>
                     </div>
-                    <div class="actions" style="display: flex; gap: 1rem;">
+                    <div class="actions" style="display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap;">
                         <button id="reset-btn" class="btn secondary outline small" style="border-radius: 10px;">Switch File</button>
+                        <button id="add-more-btn" class="btn secondary outline small" style="border-radius: 10px;">+ Add More</button>
                         <button id="download-all-btn" class="btn primary" style="border-radius: 10px; font-weight: 700; padding: 0.8rem 1.8rem;">Download Bundle (ZIP) ➔</button>
                     </div>
                 </div>

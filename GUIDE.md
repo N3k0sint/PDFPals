@@ -37,6 +37,12 @@ This guide explains how to use the **PDFPals** suite effectively. All processing
 - **Deep Scan**: Automatically find and extract every embedded image asset in a PDF.
 - **Export**: Save individual images or download the entire collection as a `.zip` file.
 
+### 🎨 Image Formats (Universal Image Converter)
+- **Supported Formats**: Convert between JPG, PNG, WEBP, GIF, BMP, HEIC/HEIF, AVIF, TIFF, SVG, ICO, and PDF.
+- **Student Lifesavers**: Seamlessly convert iPhone HEIC/HEIF photos and modern Android AVIF files for university/government portals.
+- **Batch Processing**: Convert multiple images at once; automatically packages them into a clean `.zip` file with original filenames preserved.
+- **Quality & Icons**: Customize JPEG/WEBP compression levels or generate multi-size Windows/browser ICO icons.
+
 ### 🔗 Organize, Merge & Split
 - **Organize**: Drag and drop page thumbnails to reorder or delete pages visually.
 - **Merge**: Combine multiple PDFs into a single professional document.

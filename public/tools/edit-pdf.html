@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDFPals - Edit PDF</title>
+    <link rel="stylesheet" href="../css/main.css?v=100">
+    <link rel="stylesheet" href="../css/tool.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=Great+Vibes&family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+            document.addEventListener('DOMContentLoaded', () => {
+                document.body.setAttribute('data-theme', theme);
+            });
+        })();
+    </script>
+    <style>
+        /* High Contrast Theme-Adaptive Design System */
+        :root {
+            --editor-bg: #f1f5f9;
+            --editor-surface: #ffffff;
+            --editor-surface-hover: #e2e8f0;
+            --editor-border: #cbd5e1;
+            --editor-text: #0f172a;
+            --editor-text-muted: #334155;
+            --editor-group-bg: #f8fafc;
+        }
+
+        [data-theme="dark"], html[data-theme="dark"], body[data-theme="dark"] {
+            --editor-bg: #0b0f19;
+            --editor-surface: #1e293b;
+            --editor-surface-hover: #334155;
+            --editor-border: #334155;
+            --editor-text: #f8fafc;
+            --editor-text-muted: #94a3b8;
+            --editor-group-bg: rgba(0, 0, 0, 0.25);
+        }
+
+        .app-container.editing-active {
+            max-width: 100% !important;
+            padding: 0.4rem 1rem !important;
+        }
+
+        .edit-layout {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 75px);
+            max-width: 1600px;
+            margin: 0 auto;
+            overflow: hidden;
+            border-radius: 18px;
+            border: 1px solid var(--editor-border);
+            background: var(--editor-bg);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+            animation: fadeIn 0.35s ease;
+        }
+
+        /* Top Editor Ribbon / Toolbar */
+        .editor-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 16px;
+            background: var(--editor-surface);
+            border-bottom: 1px solid var(--editor-border);
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .topbar-tools-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .topbar-actions-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .tool-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--editor-group-bg);
+            padding: 4px 6px;
+            border-radius: 10px;
+            border: 1px solid var(--editor-border);
+        }
+
+        .editor-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 11px;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 7px;
+            color: var(--editor-text) !important;
+            font-size: 0.83rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.18s;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        .editor-btn:hover:not(:disabled) {
+            background: var(--editor-surface-hover);
+            border-color: var(--editor-border);
+        }
+
+        .editor-btn.active {
+            background: var(--primary) !important;
+            border-color: var(--primary) !important;
+            color: #ffffff !important;
+            box-shadow: 0 2px 8px rgba(var(--primary-rgb), 0.35);
+        }
+
+        .editor-btn.active .icon, .editor-btn.active span {
+            color: #ffffff !important;
+        }
+
+        .editor-btn:disabled {
+            opacity: 0.38;
+            cursor: not-allowed;
+        }
+
+        .editor-btn .icon {
+            font-size: 1.05rem;
+            line-height: 1;
+        }
+
+        /* Contextual Properties Bar */
+        .context-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 16px;
+            background: var(--editor-surface);
+            border-bottom: 1px solid var(--editor-border);
+            font-size: 0.84rem;
+            color: var(--editor-text);
+            min-height: 44px;
+            overflow-x: auto;
+            z-index: 90;
+        }
+
+        .context-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border-right: 1px solid var(--editor-border);
+            padding-right: 10px;
+        }
+
+        .context-group:last-child {
+            border-right: none;
+        }
+
+        .context-label {
+            font-size: 0.76rem;
+            font-weight: 600;
+            color: var(--editor-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .context-select, .context-input {
+            background: var(--editor-surface);
+            border: 1px solid var(--editor-border);
+            color: var(--editor-text);
+            padding: 5px 8px;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            font-weight: 500;
+            outline: none;
+        }
+
+        .context-select:focus, .context-input:focus {
+            border-color: var(--primary);
+        }
+
+        .context-select option {
+            background: var(--editor-surface);
+            color: var(--editor-text);
+        }
+
+        .color-circle {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid #ffffff;
+            outline: 1px solid var(--editor-border);
+            cursor: pointer;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .color-circle input[type="color"] {
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            width: 44px;
+            height: 44px;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        /* Main Workspace: Thumbnails Sidebar + Scrollable Document Canvas */
+        .editor-workspace {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Thumbnails Sidebar */
+        .thumbnails-sidebar {
+            width: 190px;
+            background: var(--editor-surface);
+            border-right: 1px solid var(--editor-border);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 12px 8px;
+            gap: 12px;
+            flex-shrink: 0;
+            transition: width 0.25s ease;
+        }
+
+        .thumbnails-sidebar.collapsed {
+            width: 0;
+            padding: 0;
+            overflow: hidden;
+            border-right: none;
+        }
+
+        .thumb-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 8px;
+            border: 2px solid transparent;
+            transition: all 0.18s;
+        }
+
+        .thumb-card:hover {
+            background: var(--editor-surface-hover);
+        }
+
+        .thumb-card.active {
+            border-color: var(--primary);
+            background: rgba(var(--primary-rgb), 0.12);
+        }
+
+        .thumb-canvas {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            background: #ffffff;
+        }
+
+        .thumb-label {
+            font-size: 0.74rem;
+            color: var(--editor-text-muted);
+            font-weight: 600;
+        }
+
+        /* Document Scroll Viewport */
+        .document-viewport {
+            flex: 1;
+            overflow: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1.2rem;
+            background: var(--editor-bg);
+            gap: 2.2rem;
+            position: relative;
+        }
+
+        .page-container {
+            position: relative;
+            box-shadow: 0 14px 44px rgba(0, 0, 0, 0.28);
+            background: #ffffff;
+            border-radius: 4px;
+            user-select: none;
+            overflow: visible;
+        }
+
+        .page-canvas {
+            display: block;
+            pointer-events: none;
+        }
+
+        /* Interactive PDF Text Layer (For Clicking & Editing Original Text) */
+        .pdf-text-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 12;
+            pointer-events: none;
+        }
+
+        .pdf-text-layer.edit-mode {
+            pointer-events: auto;
+        }
+
+        .pdf-text-span {
+            position: absolute;
+            cursor: pointer;
+            border-radius: 2px;
+            transition: background 0.12s, outline 0.12s;
+            user-select: none;
+            box-sizing: border-box;
+            background: transparent;
+        }
+
+        .pdf-text-layer.edit-mode .pdf-text-span:hover {
+            background: rgba(79, 70, 229, 0.18) !important;
+            outline: 1.5px dashed var(--primary) !important;
+        }
+
+        /* Freehand Drawing Overlay Canvas */
+        .draw-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 14;
+            pointer-events: none;
+        }
+
+        .draw-canvas.drawing-active {
+            pointer-events: auto;
+            cursor: crosshair;
+        }
+
+        /* Annotations Overlay Layer */
+        .annotation-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        .annotation-layer.select-mode {
+            pointer-events: auto;
+        }
+
+        /* Placed Elements */
+        .anno-item {
+            position: absolute;
+            pointer-events: auto;
+            cursor: move;
+            border: 1.5px dashed transparent;
+            box-sizing: border-box;
+            transform-origin: center center;
+            touch-action: none;
+        }
+
+        .anno-item.selected {
+            border: 1.5px solid var(--primary);
+            box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.28);
+            z-index: 1000 !important;
+        }
+
+        .anno-item .anno-content {
+            width: 100%;
+            height: 100%;
+            display: block;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .anno-text-content {
+            outline: none;
+            word-break: break-word;
+            white-space: pre-wrap;
+            line-height: 1.25;
+            padding: 3px 6px;
+            cursor: text;
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Resize Handles */
+        .resize-handle {
+            position: absolute;
+            width: 9px;
+            height: 9px;
+            background: #ffffff;
+            border: 1.5px solid var(--primary);
+            border-radius: 2px;
+            display: none;
+            z-index: 1010;
+        }
+
+        .anno-item.selected .resize-handle {
+            display: block;
+        }
+
+        .handle-nw { top: -5px; left: -5px; cursor: nwse-resize; }
+        .handle-ne { top: -5px; right: -5px; cursor: nesw-resize; }
+        .handle-se { bottom: -5px; right: -5px; cursor: nwse-resize; }
+        .handle-sw { bottom: -5px; left: -5px; cursor: nesw-resize; }
+        .handle-n  { top: -5px; left: calc(50% - 4px); cursor: ns-resize; }
+        .handle-s  { bottom: -5px; left: calc(50% - 4px); cursor: ns-resize; }
+        .handle-w  { top: calc(50% - 4px); left: -5px; cursor: ew-resize; }
+        .handle-e  { top: calc(50% - 4px); right: -5px; cursor: ew-resize; }
+
+        /* Dropdown Menus */
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: var(--editor-surface);
+            border: 1px solid var(--editor-border);
+            border-radius: 12px;
+            padding: 6px;
+            display: none;
+            flex-direction: column;
+            gap: 4px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            z-index: 200;
+            min-width: 150px;
+        }
+
+        .dropdown-menu.show {
+            display: flex;
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 7px;
+            background: transparent;
+            border: none;
+            color: var(--editor-text);
+            font-size: 0.84rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-align: left;
+            transition: background 0.15s;
+        }
+
+        .dropdown-item:hover {
+            background: var(--editor-surface-hover);
+        }
+
+        /* Floating Delete / Quick action button on selected item */
+        .anno-quick-actions {
+            position: absolute;
+            top: -36px;
+            left: 0;
+            display: none;
+            align-items: center;
+            gap: 4px;
+            background: var(--editor-surface);
+            border: 1px solid var(--editor-border);
+            border-radius: 8px;
+            padding: 2px 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            z-index: 1020;
+        }
+
+        .anno-item.selected .anno-quick-actions {
+            display: flex;
+        }
+
+        .quick-btn {
+            background: none;
+            border: none;
+            color: var(--editor-text);
+            cursor: pointer;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .quick-btn:hover {
+            background: var(--editor-surface-hover);
+        }
+
+        .quick-btn.danger:hover {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+        }
+
+        .page-badge {
+            position: absolute;
+            top: -24px;
+            left: 0;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--editor-text-muted);
+            letter-spacing: 0.5px;
+        }
+
+        .tip-banner {
+            background: rgba(var(--primary-rgb), 0.1);
+            border-bottom: 1px solid rgba(var(--primary-rgb), 0.2);
+            padding: 6px 16px;
+            font-size: 0.8rem;
+            color: var(--editor-text);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Mobile & App Responsive Styles */
+        @media (max-width: 768px) {
+            .app-container {
+                padding: 0.3rem 0.5rem !important;
+            }
+            .edit-layout {
+                height: calc(100dvh - 58px);
+                border-radius: 12px;
+                margin: 0;
+            }
+            .editor-topbar {
+                padding: 6px 8px;
+                gap: 6px;
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .topbar-tools-row {
+                display: flex;
+                align-items: center;
+                gap: 5px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                padding-bottom: 2px;
+                width: 100%;
+            }
+            .topbar-tools-row::-webkit-scrollbar {
+                display: none;
+            }
+            .topbar-actions-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 6px;
+                width: 100%;
+            }
+            .editor-btn {
+                padding: 6px 9px;
+                font-size: 0.78rem;
+            }
+            .thumbnails-sidebar {
+                position: absolute;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                z-index: 150;
+                box-shadow: 4px 0 20px rgba(0, 0, 0, 0.35);
+            }
+            .thumbnails-sidebar.collapsed {
+                display: none !important;
+                width: 0 !important;
+            }
+            .document-viewport {
+                padding: 1rem 0.3rem;
+                gap: 1.2rem;
+            }
+            .context-bar {
+                padding: 4px 8px;
+                min-height: 38px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+            }
+            .context-bar::-webkit-scrollbar {
+                display: none;
+            }
+            .resize-handle {
+                width: 16px;
+                height: 16px;
+            }
+            .handle-nw { top: -8px; left: -8px; }
+            .handle-ne { top: -8px; right: -8px; }
+            .handle-se { bottom: -8px; right: -8px; }
+            .handle-sw { bottom: -8px; left: -8px; }
+            .handle-n  { top: -8px; left: calc(50% - 8px); }
+            .handle-s  { bottom: -8px; left: calc(50% - 8px); }
+            .handle-w  { top: calc(50% - 8px); left: -8px; }
+            .handle-e  { top: calc(50% - 8px); right: -8px; }
+        }
+    </style>
+    <script src="../vendor/pdf-lib/dist/pdf-lib.min.js"></script>
+    <script src="../js/mobile-bridge.js"></script>
+    <script type="module" src="edit-pdf.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <nav class="app-header">
+            <a href="../index.html" class="brand-logo">
+                <img src="../assets/icon.png" alt="PDFPals" style="height: 32px; vertical-align: middle; margin-right: 8px;"> PDFPals
+            </a>
+            <div class="tool-nav">
+                <button id="theme-toggle" aria-label="Toggle Theme">
+                    <span class="icon">☀️</span>
+                </button>
+                <a href="../index.html" class="btn back-link">Back to Menu</a>
+            </div>
+        </nav>
+
+        <header id="tool-header" style="text-align: center; margin-bottom: 3rem; margin-top: 2rem;">
+            <h1 style="font-size: 2.8rem; margin-bottom: 1rem; background: linear-gradient(135deg, var(--text-main) 0%, var(--primary) 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Edit PDF</h1>
+            <p style="color: var(--text-muted); font-size: 1.2rem; max-width: 600px; margin: 0 auto;">Add text, shapes, freehand annotations, and edit original words directly with precision.</p>
+        </header>
+
+        <!-- Initial Upload Dropzone -->
+        <div id="drop-zone" class="drop-zone">
+            <div class="drop-content">
+                <div class="icon-row" style="font-size: 3.5rem; margin-bottom: 1.5rem;">
+                    <span>📝</span>
+                    <span style="opacity: 0.3; margin: 0 1rem;">📄</span>
+                </div>
+                <p style="font-size: 1.3rem; font-weight: 500;">Drop PDF to edit document</p>
+                <p style="margin: 1rem 0;">or <label class="browse-btn" style="cursor: pointer;">Browse Local Files</label></p>
+                <input type="file" id="file-input" accept=".pdf" hidden>
+            </div>
+        </div>
+
+        <!-- Full Editor Interface (Hidden until file selected) -->
+        <div id="editor-workspace-root" class="edit-layout hidden">
+            <!-- Top Editor Toolbar (iLovePDF Style) -->
+            <header class="editor-topbar">
+                <!-- Left: Tools & Modes -->
+                <div class="topbar-tools-row">
+                    <div class="tool-group">
+                        <button id="tool-select" class="editor-btn active" title="Select & Move Objects (V)">
+                            <span class="icon">↖️</span> Select
+                        </button>
+                        <button id="tool-edit-text" class="editor-btn" title="Click on any existing text in the PDF to edit or replace words (E)">
+                            <span class="icon">✏️</span> Edit PDF Text
+                        </button>
+                        <button id="tool-text" class="editor-btn" title="Add New Text Box (T)">
+                            <span class="icon">🔤</span> Add Text
+                        </button>
+                        <button id="tool-whiteout" class="editor-btn" title="Whiteout / Erase Content (W)">
+                            <span class="icon">⬜</span> Whiteout
+                        </button>
+                        <button id="tool-image" class="editor-btn" title="Add Image (I)">
+                            <span class="icon">🖼️</span> Image
+                        </button>
+                        <input type="file" id="image-file-input" accept="image/png, image/jpeg, image/webp, image/svg+xml" hidden>
+                    </div>
+
+                    <div class="tool-group">
+                        <button id="tool-pen" class="editor-btn" title="Freehand Pen (P)">
+                            <span class="icon">🖊️</span> Draw
+                        </button>
+                        <button id="tool-highlighter" class="editor-btn" title="Highlighter (H)">
+                            <span class="icon">🖍️</span> Highlight
+                        </button>
+                    </div>
+
+                    <div class="tool-group" style="position: relative;">
+                        <button id="tool-shapes-btn" class="editor-btn" title="Shapes & Lines">
+                            <span class="icon">◻️</span> Shapes ▾
+                        </button>
+                        <div id="shapes-menu" class="dropdown-menu">
+                            <button class="dropdown-item" data-shape="rectangle"><span>⬛</span> Rectangle</button>
+                            <button class="dropdown-item" data-shape="circle"><span>⚪</span> Circle / Oval</button>
+                            <button class="dropdown-item" data-shape="line"><span>➖</span> Straight Line</button>
+                            <button class="dropdown-item" data-shape="arrow"><span>➔</span> Arrow</button>
+                        </div>
+                    </div>
+
+                    <div class="tool-group" style="position: relative;">
+                        <button id="tool-symbols-btn" class="editor-btn" title="Symbols & Stamps">
+                            <span class="icon">🏷️</span> Stamps ▾
+                        </button>
+                        <div id="symbols-menu" class="dropdown-menu">
+                            <button class="dropdown-item" data-symbol="approved"><span style="color:#10b981;font-weight:bold;">APPROVED</span></button>
+                            <button class="dropdown-item" data-symbol="rejected"><span style="color:#ef4444;font-weight:bold;">REJECTED</span></button>
+                            <button class="dropdown-item" data-symbol="confidential"><span style="color:#f59e0b;font-weight:bold;">CONFIDENTIAL</span></button>
+                            <button class="dropdown-item" data-symbol="checkmark"><span>✅</span> Checkmark</button>
+                            <button class="dropdown-item" data-symbol="cross"><span>❌</span> Cross Mark</button>
+                            <button class="dropdown-item" data-symbol="star"><span>⭐</span> Star</button>
+                        </div>
+                    </div>
+
+                    <!-- History / Undo Redo -->
+                    <div class="tool-group">
+                        <button id="btn-undo" class="editor-btn" title="Undo (Ctrl+Z)" disabled>
+                            <span class="icon">↩️</span>
+                        </button>
+                        <button id="btn-redo" class="editor-btn" title="Redo (Ctrl+Y)" disabled>
+                            <span class="icon">↪️</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right: Zoom, Switch PDF & Save/Export -->
+                <div class="topbar-actions-row">
+                    <div class="tool-group">
+                        <button id="btn-zoom-out" class="editor-btn" title="Zoom Out (-)">-</button>
+                        <span id="zoom-level" style="font-size:0.8rem; font-weight:600; min-width:44px; text-align:center; color:var(--editor-text);">100%</span>
+                        <button id="btn-zoom-in" class="editor-btn" title="Zoom In (+)">+</button>
+                        <button id="btn-zoom-fit" class="editor-btn" title="Fit to Screen" style="padding: 7px 8px;">Fit</button>
+                    </div>
+
+                    <button id="btn-toggle-sidebar" class="editor-btn" title="Toggle Page Thumbnails">
+                        <span class="icon">📑</span>
+                    </button>
+                    <button id="btn-switch-pdf" class="editor-btn" style="color: var(--editor-text-muted);">Switch PDF</button>
+                    <button id="btn-save-pdf" class="btn primary small" style="border-radius: 8px; font-weight: 700; padding: 0.6rem 1.3rem;">
+                        Save & Download ➔
+                    </button>
+                </div>
+            </header>
+
+            <!-- Dynamic Contextual Formatting Bar -->
+            <div id="context-bar" class="context-bar">
+                <!-- Text Formatting (Shown when Text tool is active or Text element selected) -->
+                <div id="ctx-text-group" class="context-group">
+                    <span class="context-label">Font</span>
+                    <select id="ctx-font-family" class="context-select" title="Font Family">
+                        <option value="Arial">Arial (Modern Sans)</option>
+                        <option value="Helvetica" selected>Helvetica (Standard)</option>
+                        <option value="Georgia">Georgia (Formal Serif)</option>
+                        <option value="Times">Times New Roman</option>
+                        <option value="Cinzel">Cinzel (Certificate Roman)</option>
+                        <option value="Playfair Display">Playfair Display (Luxury Serif)</option>
+                        <option value="Great Vibes">Great Vibes (Calligraphy Script)</option>
+                        <option value="Montserrat">Montserrat (Clean Bold)</option>
+                        <option value="Courier">Courier (Monospace)</option>
+                    </select>
+
+                    <div style="display:inline-flex; align-items:center; gap:1px;">
+                        <button id="ctx-font-size-dec" class="editor-btn" title="Decrease font size by 1 pt" style="padding: 4px 6px; font-weight: bold; font-size: 0.85rem;">−</button>
+                        <select id="ctx-font-size" class="context-select" title="Font Size">
+                            <option value="1">1 pt</option>
+                            <option value="2">2 pt</option>
+                            <option value="3">3 pt</option>
+                            <option value="4">4 pt</option>
+                            <option value="5">5 pt</option>
+                            <option value="6">6 pt</option>
+                            <option value="7">7 pt</option>
+                            <option value="8">8 pt</option>
+                            <option value="9">9 pt</option>
+                            <option value="10">10 pt</option>
+                            <option value="11">11 pt</option>
+                            <option value="12">12 pt</option>
+                            <option value="13">13 pt</option>
+                            <option value="14">14 pt</option>
+                            <option value="15">15 pt</option>
+                            <option value="16">16 pt</option>
+                            <option value="17">17 pt</option>
+                            <option value="18">18 pt</option>
+                            <option value="19">19 pt</option>
+                            <option value="20">20 pt</option>
+                            <option value="22">22 pt</option>
+                            <option value="24">24 pt</option>
+                            <option value="26">26 pt</option>
+                            <option value="28">28 pt</option>
+                            <option value="30">30 pt</option>
+                            <option value="32" selected>32 pt</option>
+                            <option value="36">36 pt</option>
+                            <option value="40">40 pt</option>
+                            <option value="44">44 pt</option>
+                            <option value="48">48 pt</option>
+                            <option value="52">52 pt</option>
+                            <option value="56">56 pt</option>
+                            <option value="60">60 pt</option>
+                            <option value="64">64 pt</option>
+                            <option value="72">72 pt</option>
+                            <option value="80">80 pt</option>
+                            <option value="88">88 pt</option>
+                            <option value="96">96 pt</option>
+                            <option value="104">104 pt</option>
+                            <option value="112">112 pt</option>
+                            <option value="120">120 pt</option>
+                            <option value="130">130 pt</option>
+                            <option value="140">140 pt</option>
+                            <option value="150">150 pt</option>
+                            <option value="160">160 pt</option>
+                            <option value="180">180 pt</option>
+                            <option value="200">200 pt</option>
+                            <option value="250">250 pt</option>
+                            <option value="300">300 pt</option>
+                            <option value="custom">Custom...</option>
+                        </select>
+                        <button id="ctx-font-size-inc" class="editor-btn" title="Increase font size by 1 pt" style="padding: 4px 6px; font-weight: bold; font-size: 0.85rem;">+</button>
+                    </div>
+
+                    <button id="ctx-bold" class="editor-btn" title="Bold (B)" style="padding: 4px 8px;"><b>B</b></button>
+                    <button id="ctx-italic" class="editor-btn" title="Italic (I)" style="padding: 4px 8px;"><i>I</i></button>
+
+                    <div style="display:flex; gap:2px; margin-left:2px;">
+                        <button id="ctx-align-left" class="editor-btn" title="Align Left" style="padding: 5px 6px;">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
+                        </button>
+                        <button id="ctx-align-center" class="editor-btn active" title="Align Center" style="padding: 5px 6px;">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="10" x2="6" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="18" y1="18" x2="6" y2="18"/></svg>
+                        </button>
+                        <button id="ctx-align-right" class="editor-btn" title="Align Right" style="padding: 5px 6px;">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="21" y1="10" x2="7" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="7" y2="18"/></svg>
+                        </button>
+                    </div>
+
+                    <span class="context-label" style="margin-left:4px;">Text:</span>
+                    <label class="color-circle" id="ctx-color-label" title="Text Color" style="background:#000000;">
+                        <input type="color" id="ctx-text-color" value="#000000">
+                    </label>
+                    <button id="ctx-eyedropper-btn" class="editor-btn" title="Pick text color from certificate (Eyedropper)" style="padding: 4px 6px; font-size: 0.85rem;">💧</button>
+
+                    <span class="context-label" style="margin-left:4px;">Background:</span>
+                    <label class="color-circle" id="ctx-bg-color-label" title="Background Fill Color" style="background:#ffffff;">
+                        <input type="color" id="ctx-bg-color" value="#ffffff">
+                    </label>
+                    <button id="ctx-bg-eyedropper-btn" class="editor-btn" title="Pick background color from certificate (Eyedropper)" style="padding: 4px 6px; font-size: 0.85rem;">💧</button>
+                    <button id="ctx-bg-transparent" class="editor-btn" title="Transparent Background" style="padding: 3px 6px; font-size: 0.74rem;">No Fill</button>
+                </div>
+
+                <!-- Drawing & Highlighter Options -->
+                <div id="ctx-draw-group" class="context-group hidden">
+                    <span class="context-label">Brush Color:</span>
+                    <label class="color-circle" id="ctx-stroke-color-label" title="Stroke Color" style="background:#ff0000;">
+                        <input type="color" id="ctx-stroke-color" value="#ff0000">
+                    </label>
+
+                    <span class="context-label" style="margin-left:6px;">Thickness:</span>
+                    <input type="range" id="ctx-stroke-width" min="1" max="25" value="3" style="width: 80px; accent-color: var(--primary);">
+                    <span id="ctx-stroke-width-val" style="font-size: 0.8rem; font-weight:600; min-width:24px;">3px</span>
+
+                    <div style="display:flex; gap:4px; margin-left:8px;">
+                        <button class="editor-btn color-preset" data-color="#ff0000" style="background:#ff0000; width:18px; height:18px; padding:0; border-radius:50%; border:none;"></button>
+                        <button class="editor-btn color-preset" data-color="#2563eb" style="background:#2563eb; width:18px; height:18px; padding:0; border-radius:50%; border:none;"></button>
+                        <button class="editor-btn color-preset" data-color="#16a34a" style="background:#16a34a; width:18px; height:18px; padding:0; border-radius:50%; border:none;"></button>
+                        <button class="editor-btn color-preset" data-color="#fef08a" style="background:#fef08a; width:18px; height:18px; padding:0; border-radius:50%; border:none;" title="Highlighter Yellow"></button>
+                        <button class="editor-btn color-preset" data-color="#000000" style="background:#000000; width:18px; height:18px; padding:0; border-radius:50%; border:none;"></button>
+                    </div>
+                </div>
+
+                <!-- Shape Options -->
+                <div id="ctx-shape-group" class="context-group hidden">
+                    <span class="context-label">Border:</span>
+                    <label class="color-circle" id="ctx-shape-border-label" title="Border Color" style="background:#ff0000;">
+                        <input type="color" id="ctx-shape-border" value="#ff0000">
+                    </label>
+
+                    <span class="context-label" style="margin-left:4px;">Fill:</span>
+                    <label class="color-circle" id="ctx-shape-fill-label" title="Fill Color" style="background:transparent; border-style:dashed;">
+                        <input type="color" id="ctx-shape-fill" value="#ffffff">
+                    </label>
+                    <button id="ctx-shape-nofill" class="editor-btn" title="Transparent Fill" style="padding: 3px 6px; font-size: 0.74rem;">No Fill</button>
+
+                    <span class="context-label" style="margin-left:4px;">Width:</span>
+                    <select id="ctx-shape-stroke-width" class="context-select">
+                        <option value="1">1 px</option>
+                        <option value="2" selected>2 px</option>
+                        <option value="3">3 px</option>
+                        <option value="5">5 px</option>
+                        <option value="8">8 px</option>
+                    </select>
+                </div>
+
+                <!-- Tip text in Context Bar -->
+                <div id="ctx-tip-text" style="font-size: 0.78rem; color: var(--editor-text-muted); margin-left: 4px;">
+                    💡 Click <b>Edit PDF Text</b> then click any existing text to edit it in-place.
+                </div>
+
+                <!-- Selection Actions (Delete, Duplicate, Layering) -->
+                <div id="ctx-selection-group" class="context-group" style="margin-left: auto;">
+                    <button id="ctx-btn-duplicate" class="editor-btn" title="Duplicate Object (Ctrl+D)">
+                        <span>📑</span> Duplicate
+                    </button>
+                    <button id="ctx-btn-front" class="editor-btn" title="Bring to Front">
+                        <span>⬆️</span> Front
+                    </button>
+                    <button id="ctx-btn-back" class="editor-btn" title="Send to Back">
+                        <span>⬇️</span> Back
+                    </button>
+                    <button id="ctx-btn-delete" class="editor-btn" style="color: #ef4444 !important;" title="Delete Object (Del)">
+                        <span>🗑️</span> Delete
+                    </button>
+                </div>
+            </div>
+
+            <!-- Workspace Body -->
+            <div class="editor-workspace">
+                <!-- Page Thumbnails Column -->
+                <aside id="thumbnails-sidebar" class="thumbnails-sidebar">
+                    <!-- Dynamic Thumbnails Rendered Here -->
+                </aside>
+
+                <!-- Document Multi-Page Scroll View -->
+                <main id="document-viewport" class="document-viewport">
+                    <!-- Dynamic PDF Pages Rendered Here -->
+                </main>
+            </div>
+        </div>
+
+        <footer id="tool-footer">
+            <p>&copy; 2026 PDFPals. Locally processed, secure & private.</p>
+        </footer>
+    </div>
+
+    <!-- Theme management script -->
+    <script src="../js/theme.js?v=100"></script>
+</body>
+
+</html>

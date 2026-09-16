@@ -22,12 +22,96 @@
             -webkit-backdrop-filter: blur(12px);
             border-radius: 24px;
             border: 1px solid var(--border);
-            padding: 3rem;
+            padding: 2rem;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             min-height: 600px;
+            max-height: 85vh;
+            overflow: auto;
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        .pdf-view-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            gap: 1.2rem;
+        }
+
+        .pdf-nav-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            background: rgba(0, 0, 0, 0.35);
+            padding: 6px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-page-btn {
+            background: none;
+            border: none;
+            color: var(--primary);
+            font-size: 1.4rem;
+            cursor: pointer;
+            line-height: 1;
+            padding: 2px 8px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        .nav-page-btn:hover:not(:disabled) {
+            background: rgba(var(--primary-rgb), 0.2);
+        }
+
+        .nav-page-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .page-indicator {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .file-name-badge {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            border-left: 1px solid rgba(255, 255, 255, 0.15);
+            padding-left: 0.8rem;
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .preview-stage {
+            position: relative;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+            border-radius: 6px;
+            overflow: hidden;
+            background: #ffffff;
+            display: inline-block;
+            max-width: 100%;
+        }
+
+        .pdf-canvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .watermark-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: auto;
+            cursor: crosshair;
         }
 
         .sidebar-section {
@@ -197,10 +281,21 @@
             </div>
 
             <div id="workspace" class="watermark-workspace hidden">
-                <div class="document-section">
-                    <div id="file-preview" class="file-preview">
-                        <div class="file-icon" style="font-size: 5rem; margin-bottom: 1.5rem;">📄</div>
-                        <div id="file-name" class="file-name" style="font-weight: 600; font-size: 1.1rem; opacity: 0.8;">filename.pdf</div>
+                <div class="document-section" id="document-section">
+                    <div id="pdf-view-container" class="pdf-view-container">
+                        <div class="pdf-nav-bar" id="pdf-nav-bar">
+                            <button id="prev-page-btn" class="nav-page-btn" title="Previous Page">‹</button>
+                            <span id="page-num-indicator" class="page-indicator">Page 1 / 1</span>
+                            <button id="next-page-btn" class="nav-page-btn" title="Next Page">›</button>
+                            <span id="file-name" class="file-name-badge">filename.pdf</span>
+                        </div>
+                        <div class="preview-stage" id="preview-stage">
+                            <canvas id="pdf-canvas" class="pdf-canvas"></canvas>
+                            <canvas id="watermark-canvas" class="watermark-canvas"></canvas>
+                        </div>
+                        <p style="text-align:center; color: var(--text-muted); font-size: 0.8rem; margin: 0; user-select: none;">
+                            💡 Click or drag on the document to place the watermark anywhere, or use the Grid Presets.
+                        </p>
                     </div>
                 </div>
 
@@ -226,19 +321,19 @@
                             <div class="format-toolbar">
                                 <div style="display: flex; gap: 0.5rem;">
                                     <select id="wm-font" class="input-field" style="flex: 2;">
-                                        <option>Arial</option>
-                                        <option>Courier</option>
-                                        <option>Helvetica</option>
-                                        <option>Times Roman</option>
+                                        <option value="Arial">Arial</option>
+                                        <option value="Courier">Courier</option>
+                                        <option value="Helvetica">Helvetica</option>
+                                        <option value="Times Roman">Times Roman</option>
                                     </select>
                                     <input type="number" id="wm-size" class="input-field" value="48" style="flex: 1;">
                                 </div>
                                 <div class="format-btns">
-                                    <button class="format-btn"><b>B</b></button>
-                                    <button class="format-btn"><i>I</i></button>
-                                    <button class="format-btn" style="position:relative; overflow:hidden;">
+                                    <button class="format-btn active" id="btn-bold" type="button"><b>B</b></button>
+                                    <button class="format-btn" id="btn-italic" type="button"><i>I</i></button>
+                                    <button class="format-btn" type="button" style="position:relative; overflow:hidden;" title="Pick Watermark Color">
                                         <span style="font-weight:bold; font-size: 1.2rem;">A</span>
-                                        <div style="width:100%; height:4px; background:var(--primary); position:absolute; bottom:6px; left:0;"></div>
+                                        <div id="color-bar" style="width:100%; height:4px; background:#FF0000; position:absolute; bottom:6px; left:0;"></div>
                                         <input type="color" id="wm-color" style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;" value="#FF0000">
                                     </button>
                                 </div>
@@ -314,7 +409,6 @@
     </div>
     <!-- Essential Libraries -->
     <script src="../vendor/pdf-lib/dist/pdf-lib.min.js"></script>
-    <script src="../vendor/pdfjs-dist/build/pdf.mjs" type="module"></script>
     <script type="module" src="watermark-pdf.js"></script>
     <script src="../js/mobile-bridge.js"></script>
     <script src="../js/theme.js?v=100"></script>
