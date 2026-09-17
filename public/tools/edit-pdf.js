@@ -139,6 +139,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const toolFooter = document.getElementById('tool-footer');
         const appContainer = document.querySelector('.app-container');
 
+        const dropZoneMain = document.getElementById('drop-zone-main');
+        if (dropZoneMain) dropZoneMain.classList.add('hidden');
         dropZone.classList.add('hidden');
         if (toolHeader) toolHeader.classList.add('hidden');
         if (toolFooter) toolFooter.classList.add('hidden');
@@ -2054,6 +2056,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const toolFooter = document.getElementById('tool-footer');
             const appContainer = document.querySelector('.app-container');
 
+            const dropZoneMain = document.getElementById('drop-zone-main');
+            if (dropZoneMain) dropZoneMain.classList.remove('hidden');
             dropZone.classList.remove('hidden');
             if (toolHeader) toolHeader.classList.remove('hidden');
             if (toolFooter) toolFooter.classList.remove('hidden');

@@ -8,152 +8,403 @@
     <link rel="stylesheet" href="../css/main.css?v=100">
     <link rel="stylesheet" href="../css/tool.css">
     <style>
-        .converter-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 1fr 360px;
-            gap: 2rem;
-            animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        :root {
+            --editor-bg: #1e1e2e;
+            --editor-fg: #cdd6f4;
+            --sheet-bg: #ffffff;
+            --sheet-text: #1e293b;
         }
 
-        .input-panel {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 28px;
-            padding: 2.5rem;
+        [data-theme="light"] {
+            --editor-bg: #181825;
+            --editor-fg: #cdd6f4;
+        }
+
+        .web-canvas-workspace {
+            max-width: 1600px;
+            margin: 0 auto;
             display: flex;
             flex-direction: column;
             gap: 1.5rem;
-            min-height: 700px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            padding: 0 1rem 3rem;
+            animation: fadeIn 0.4s ease;
         }
 
-        .editor-header {
+        /* Top Action Bar */
+        .action-toolbar {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            justify-content: space-between;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            padding: 0.8rem 1.2rem;
+            gap: 1rem;
+            flex-wrap: wrap;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
         }
 
-        .editor-header span {
-            font-weight: 700;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            font-size: 0.8rem;
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+        }
+
+        .view-tabs {
+            display: flex;
+            background: rgba(0, 0, 0, 0.06);
+            border-radius: 10px;
+            padding: 3px;
+            border: 1px solid var(--border);
+        }
+
+        [data-theme="dark"] .view-tabs {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-btn {
+            padding: 6px 14px;
+            border-radius: 8px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tab-btn.active {
+            background: var(--card-bg);
             color: var(--primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .live-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #10b981;
+            padding: 4px 10px;
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: 20px;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .live-status .pulse-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 8px #10b981;
+            animation: pulse 1.8s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.3); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+
+        /* Split Workspace Grid */
+        .workspace-grid {
+            display: grid;
+            grid-template-columns: minmax(380px, 1fr) minmax(380px, 1.1fr) 320px;
+            gap: 1.5rem;
+            min-height: calc(100vh - 280px);
+            align-items: stretch;
+        }
+
+        .workspace-grid.code-only {
+            grid-template-columns: 1fr 320px;
+        }
+        .workspace-grid.code-only .preview-panel {
+            display: none !important;
+        }
+
+        .workspace-grid.preview-only {
+            grid-template-columns: 1fr 320px;
+        }
+        .workspace-grid.preview-only .editor-panel {
+            display: none !important;
+        }
+
+        /* Panel Common */
+        .panel-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06);
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 16px;
+            background: rgba(0, 0, 0, 0.02);
+            border-bottom: 1px solid var(--border);
+        }
+
+        [data-theme="dark"] .panel-header {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .panel-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Editor Section */
+        .editor-container {
+            position: relative;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--editor-bg);
         }
 
         #html-input {
-            flex-grow: 1;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            padding: 1.5rem;
-            color: #fff;
-            font-family: 'Fira Code', monospace;
-            font-size: 1rem;
-            line-height: 1.6;
-            resize: none;
-            transition: all 0.3s;
-        }
-
-        #html-input:focus {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            min-height: 520px;
+            border: none;
             outline: none;
-            border-color: var(--primary);
-            background: rgba(0, 0, 0, 0.4);
-            box-shadow: 0 0 20px rgba(var(--primary-rgb), 0.1);
+            background: transparent;
+            color: var(--editor-fg);
+            font-family: 'Fira Code', Consolas, Monaco, monospace;
+            font-size: 0.92rem;
+            line-height: 1.6;
+            padding: 1.2rem;
+            box-sizing: border-box;
+            resize: none;
+            tab-size: 2;
         }
 
-        .sidebar-section {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 28px;
-            padding: 2.5rem;
+        .editor-drop-hint {
+            position: absolute;
+            inset: 0;
+            background: rgba(79, 70, 229, 0.85);
+            backdrop-filter: blur(4px);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 700;
+            font-size: 1.2rem;
+            z-index: 10;
+            border: 3px dashed #fff;
+            border-radius: 18px;
+            margin: 8px;
+            pointer-events: none;
+        }
+
+        .editor-container.drag-over .editor-drop-hint {
+            display: flex;
+        }
+
+        /* Live Preview Section */
+        .preview-panel {
+            background: #e2e8f0;
+        }
+
+        [data-theme="dark"] .preview-panel {
+            background: #0f172a;
+        }
+
+        .preview-viewport {
+            flex: 1;
+            overflow: auto;
+            padding: 1.5rem 1rem;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            background: radial-gradient(circle, rgba(148, 163, 184, 0.15) 1px, transparent 1px);
+            background-size: 16px 16px;
+        }
+
+        .sheet-wrapper {
+            background: var(--sheet-bg);
+            box-shadow: 0 14px 40px rgba(0, 0, 0, 0.22);
+            border-radius: 6px;
+            transform-origin: top center;
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #preview-frame {
+            width: 100%;
+            height: 100%;
+            min-height: 680px;
+            border: none;
+            background: #ffffff;
+            display: block;
+        }
+
+        /* Sidebar Settings */
+        .config-sidebar {
+            padding: 1.5rem;
+            gap: 1.4rem;
             height: fit-content;
             position: sticky;
-            top: 2rem;
-            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+            top: 1rem;
         }
 
-        select, input {
-            background: rgba(0, 0, 0, 0.3) !important;
-            border: 1px solid rgba(255, 255, 255, 0.1) !important;
-            color: #fff !important;
-            border-radius: 12px !important;
-            padding: 12px 1rem !important;
+        .config-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            color: var(--text-main);
+            margin: 0 0 0.5rem;
+        }
+
+        .setting-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+        }
+
+        .setting-field label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+        }
+
+        .setting-field select,
+        .setting-field input {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            border-radius: 10px;
+            padding: 9px 12px;
+            font-size: 0.88rem;
+            font-weight: 500;
+            width: 100%;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .setting-field select:focus,
+        .setting-field input:focus {
+            border-color: var(--primary);
+        }
+
+        .btn-export-primary {
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            color: #ffffff;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.35);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
             width: 100%;
         }
 
-        .conversion-tip {
-            background: rgba(var(--primary-rgb), 0.05);
-            border: 1px solid rgba(var(--primary-rgb), 0.1);
-            border-radius: 16px;
-            padding: 1.2rem;
-            margin-bottom: 2rem;
+        .btn-export-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 22px rgba(79, 70, 229, 0.45);
         }
 
-        .conversion-tip p {
-            font-size: 0.85rem;
-            line-height: 1.5;
-            margin: 0;
-            opacity: 0.8;
+        .btn-export-secondary {
+            background: transparent;
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        .btn-export-secondary:hover:not(:disabled) {
+            background: rgba(0, 0, 0, 0.05);
+            border-color: var(--primary);
+            color: var(--primary);
         }
 
-        /* Mobile Responsiveness */
-        @media (max-width: 1100px) {
-            .converter-container {
-                grid-template-columns: 1fr;
-                padding: 1.5rem;
+        [data-theme="dark"] .btn-export-secondary:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Hidden Render Area for Canvas Conversion */
+        .hidden-render-container {
+            position: absolute;
+            left: -99999px;
+            top: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 1280px) {
+            .workspace-grid {
+                grid-template-columns: 1fr 1fr;
             }
-            .sidebar-section {
+            .config-sidebar {
+                grid-column: span 2;
                 position: static;
-                margin-top: 2rem;
-                width: 100%;
-            }
-            .input-panel {
-                min-height: 400px;
-                padding: 1.5rem;
             }
         }
 
-        @media (max-width: 768px) {
-            .app-header {
-                flex-direction: column;
-                height: auto;
-                padding: 1.5rem;
-                gap: 1.5rem;
+        @media (max-width: 900px) {
+            .workspace-grid {
+                grid-template-columns: 1fr;
             }
-            .tool-nav {
-                width: 100%;
+            .config-sidebar {
+                grid-column: 1;
+            }
+            .action-toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .toolbar-group {
                 justify-content: space-between;
             }
-            header h1 {
-                font-size: 2.2rem !important;
-            }
-            header p {
-                font-size: 1.1rem !important;
-            }
             #html-input {
-                font-size: 0.9rem;
-                min-height: 300px;
+                min-height: 380px;
             }
         }
     </style>
     <!-- Essential Libraries -->
     <script src="../vendor/pdf-lib/dist/pdf-lib.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="../vendor/html2canvas/html2canvas.min.js"></script>
     <script src="../vendor/pdfjs-dist/build/pdf.mjs" type="module"></script>
+    <script src="../js/mobile-bridge.js"></script>
     <script type="module" src="html-to-pdf.js"></script>
 </head>
 
@@ -171,68 +422,150 @@
             </div>
         </nav>
 
-        <header style="text-align: center; margin-bottom: 4rem; margin-top: 2rem;">
-            <h1 style="font-size: 3.2rem; margin-bottom: 1.2rem; background: linear-gradient(135deg, var(--text-main) 0%, var(--primary) 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px;">Web to Canvas</h1>
-            <p style="color: var(--text-muted); font-size: 1.25rem; max-width: 700px; margin: 0 auto; line-height: 1.6;">Transform raw markup into professional PDF layouts. Build, style, and export with instantaneous local rendering.</p>
+        <header style="text-align: center; margin-bottom: 2rem; margin-top: 1.5rem;">
+            <h1 style="font-size: 2.8rem; margin-bottom: 0.8rem; background: linear-gradient(135deg, var(--text-main) 0%, var(--primary) 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px;">Web to Canvas</h1>
+            <p style="color: var(--text-muted); font-size: 1.15rem; max-width: 700px; margin: 0 auto; line-height: 1.5;">Transform raw HTML & CSS markup into pixel-perfect, multi-page PDFs with real-time live preview and high-fidelity vector printing.</p>
         </header>
 
-        <main>
-            <div class="converter-container">
-                <div class="input-panel">
-                    <div class="editor-header">
-                        <span>Source Engine</span>
-                        <div class="editor-actions" style="display: flex; gap: 0.8rem;">
-                            <button id="clear-editor" class="btn secondary sm" style="border-radius: 8px; padding: 6px 14px;">Clear</button>
-                            <button id="load-example" class="btn secondary sm" style="border-radius: 8px; padding: 6px 14px;">Example</button>
-                        </div>
-                    </div>
-                    <textarea id="html-input"
-                        placeholder="<html>
-  <body>
-    <h1>Local Rendering</h1>
-    <p>Build your document using HTML/CSS.</p>
-  </body>
-</html>"></textarea>
+        <main class="web-canvas-workspace">
+            <!-- Top Control Bar -->
+            <div class="action-toolbar">
+                <div class="toolbar-group">
+                    <button id="btn-open-file" class="btn secondary sm" style="border-radius: 9px; padding: 6px 12px; font-size: 0.85rem;">
+                        📂 Open HTML File
+                    </button>
+                    <input type="file" id="html-file-input" accept=".html,.htm,.txt" hidden>
                 </div>
 
-                <aside class="sidebar-section">
-                    <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem;">
-                        <h2 style="margin:0; font-size: 1.3rem; letter-spacing: -0.5px;">Engine Config</h2>
-                        <button id="reset-editor-btn" class="btn secondary outline small" style="border-radius: 8px;">Reset</button>
+                <div class="toolbar-group">
+                    <div class="view-tabs">
+                        <button id="tab-split" class="tab-btn active" title="Split Screen">Split</button>
+                        <button id="tab-code" class="tab-btn" title="Code Editor Only">Code</button>
+                        <button id="tab-preview" class="tab-btn" title="Live Preview Only">Preview</button>
                     </div>
 
-                    <div class="setting-group" style="margin-bottom: 1.5rem;">
-                        <label style="display: block; margin-bottom: 0.8rem; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--primary);">Dimensions</label>
-                        <select id="page-size" style="margin-bottom: 1rem;">
-                            <option value="a4">A4 (Standard)</option>
-                            <option value="letter">Letter</option>
-                            <option value="legal">Legal</option>
+                    <div class="live-status">
+                        <span class="pulse-dot"></span>
+                        <span>Live Sync</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Split Workspace -->
+            <div id="workspace-grid" class="workspace-grid">
+                <!-- 1. Code Editor Panel -->
+                <section class="panel-box editor-panel">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <span>💻</span> HTML / CSS Source
+                        </div>
+                        <div style="display: flex; gap: 6px;">
+                            <button id="btn-copy-code" class="btn secondary outline sm" style="border-radius: 7px; padding: 4px 10px; font-size: 0.78rem;" title="Copy Code">📋 Copy</button>
+                            <button id="btn-clear-code" class="btn secondary outline sm" style="border-radius: 7px; padding: 4px 10px; font-size: 0.78rem;" title="Clear Editor">🗑️ Clear</button>
+                        </div>
+                    </div>
+                    <div id="editor-container" class="editor-container">
+                        <div class="editor-drop-hint">
+                            <span>📥 Drop .html file here</span>
+                        </div>
+                        <textarea id="html-input" spellcheck="false" placeholder="Type or paste your HTML markup here..."></textarea>
+                    </div>
+                </section>
+
+                <!-- 2. Live Document Preview Panel -->
+                <section class="panel-box preview-panel">
+                    <div class="panel-header">
+                        <div class="panel-title">
+                            <span>👁️</span> Document Sheet Preview
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <label for="preview-zoom" style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted);">ZOOM:</label>
+                            <select id="preview-zoom" style="background: var(--card-bg); border: 1px solid var(--border); color: var(--text-main); border-radius: 7px; padding: 3px 8px; font-size: 0.78rem; font-weight: 600;">
+                                <option value="0.75">75%</option>
+                                <option value="0.85" selected>85%</option>
+                                <option value="1.0">100%</option>
+                                <option value="0.6">Fit</option>
+                            </select>
+                            <button id="btn-refresh-preview" class="btn secondary outline sm" style="border-radius: 7px; padding: 4px 8px; font-size: 0.78rem;" title="Force Reload">🔄</button>
+                        </div>
+                    </div>
+                    <div class="preview-viewport">
+                        <div id="sheet-wrapper" class="sheet-wrapper">
+                            <iframe id="preview-frame" sandbox="allow-same-origin allow-scripts" title="Document Preview"></iframe>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. Engine & Export Configuration Sidebar -->
+                <aside class="panel-box config-sidebar">
+                    <h2 class="config-title">Page Layout</h2>
+
+                    <div class="setting-field">
+                        <label for="page-size">Paper Size</label>
+                        <select id="page-size">
+                            <option value="a4" selected>A4 (210 × 297 mm)</option>
+                            <option value="letter">US Letter (8.5 × 11 in)</option>
+                            <option value="legal">Legal (8.5 × 14 in)</option>
                         </select>
+                    </div>
+
+                    <div class="setting-field">
+                        <label for="orientation">Orientation</label>
                         <select id="orientation">
-                            <option value="portrait">Portrait</option>
+                            <option value="portrait" selected>Portrait</option>
                             <option value="landscape">Landscape</option>
                         </select>
                     </div>
 
-                    <div class="setting-group" style="margin-bottom: 2.5rem;">
-                        <label style="display: block; margin-bottom: 0.8rem; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--primary);">Margins</label>
+                    <div class="setting-field">
+                        <label for="margin">Margins</label>
                         <select id="margin">
-                            <option value="20">Standard (20px)</option>
-                            <option value="0">Zero (0px)</option>
-                            <option value="40">Maximum (40px)</option>
+                            <option value="20" selected>Standard (20mm / 20px)</option>
+                            <option value="10">Compact (10mm / 10px)</option>
+                            <option value="0">Zero (0px borderless)</option>
+                            <option value="35">Wide (35mm / 35px)</option>
                         </select>
                     </div>
 
-                    <div class="conversion-tip">
-                        <p><strong>Pro Tip:</strong> Use modern CSS Grid or Flexbox. All assets are processed 100% locally for maximum privacy.</p>
+                    <div class="setting-field">
+                        <label for="page-numbers">Page Numbering</label>
+                        <select id="page-numbers">
+                            <option value="none" selected>None</option>
+                            <option value="bottom-center">Bottom Center (Page X of Y)</option>
+                            <option value="bottom-right">Bottom Right</option>
+                        </select>
                     </div>
 
-                    <button id="convert-html" class="btn primary full-width action-btn" style="padding: 1rem; border-radius: 12px; font-weight: 700; font-size: 1rem;">Render & Export ➔</button>
+                    <div class="setting-field">
+                        <label for="scale-quality">Canvas Render Quality</label>
+                        <select id="scale-quality">
+                            <option value="2" selected>2× High-DPI (Crisp & Fast)</option>
+                            <option value="3">3× Ultra-Sharp (300 DPI Print)</option>
+                        </select>
+                    </div>
+
+                    <hr style="border: 0; border-top: 1px solid var(--border); margin: 0.5rem 0;">
+
+                    <!-- Primary Export: Multi-page Canvas Slicing -->
+                    <button id="convert-html" class="btn-export-primary" title="Download paginated PDF document">
+                        <span>⚡</span>
+                        <span id="export-label">Download Multi-Page PDF</span>
+                    </button>
+
+                    <!-- Secondary Export: Native Vector Print -->
+                    <button id="btn-vector-print" class="btn-export-secondary" title="Export as 100% vector selectable PDF via browser print stream">
+                        <span>🖨️</span>
+                        <span>Vector Print to PDF (Selectable Text)</span>
+                    </button>
+
+                    <div style="background: rgba(var(--primary-rgb), 0.05); border: 1px solid rgba(var(--primary-rgb), 0.15); border-radius: 12px; padding: 12px; font-size: 0.78rem; line-height: 1.5; color: var(--text-muted);">
+                        <strong style="color: var(--text-main);">Tip:</strong> Long documents are automatically sliced across multiple pages without squishing. Use <strong>Vector Print</strong> if you need searchable, highlightable text and clickable web links.
+                    </div>
                 </aside>
             </div>
 
-            <!-- Preview/Hidden Rendering Area -->
-            <div id="render-area" class="hidden-render"></div>
+            <!-- Hidden container for offscreen rendering -->
+            <div id="render-area" class="hidden-render-container"></div>
         </main>
 
         <footer>

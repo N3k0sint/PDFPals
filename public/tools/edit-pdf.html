@@ -621,7 +621,75 @@
             .handle-n  { top: -8px; left: calc(50% - 8px); }
             .handle-s  { bottom: -8px; left: calc(50% - 8px); }
             .handle-w  { top: calc(50% - 8px); left: -8px; }
-            .handle-e  { top: calc(50% - 8px); right: -8px; }
+            .drop-zone-container {
+                padding: 0 1rem;
+                margin-bottom: 2rem;
+            }
+            #drop-zone.drop-zone {
+                min-height: 260px;
+                padding: 2.2rem 1.2rem;
+                border-radius: 1.2rem;
+            }
+            #tool-header {
+                margin-bottom: 1.8rem !important;
+                margin-top: 1.2rem !important;
+                padding: 0 1rem;
+            }
+            #tool-header h1 {
+                font-size: 2.1rem !important;
+            }
+            #tool-header p {
+                font-size: 1.05rem !important;
+            }
+        }
+
+        /* Initial Drop Zone Responsive Architecture */
+        .drop-zone-container {
+            width: 100%;
+            max-width: 860px;
+            margin: 0 auto 3.5rem;
+            padding: 0 1.5rem;
+            box-sizing: border-box;
+        }
+
+        #drop-zone.drop-zone {
+            width: 100%;
+            max-width: 100%;
+            min-height: 330px;
+            margin: 0 auto;
+            padding: clamp(2.5rem, 6vw, 4.5rem) clamp(1.5rem, 4vw, 3rem);
+            background: var(--card-bg);
+            border: 2px dashed var(--border);
+            border-radius: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #drop-zone.drop-zone:hover,
+        #drop-zone.drop-zone.drag-over {
+            border-color: var(--primary);
+            background: rgba(79, 70, 229, 0.05);
+            transform: translateY(-2px);
+            box-shadow: 0 16px 36px rgba(79, 70, 229, 0.15);
+        }
+
+        [data-theme="dark"] #drop-zone.drop-zone {
+            background: var(--editor-surface);
+            border-color: var(--editor-border);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.35);
+        }
+
+        [data-theme="dark"] #drop-zone.drop-zone:hover,
+        [data-theme="dark"] #drop-zone.drop-zone.drag-over {
+            border-color: var(--primary);
+            background: rgba(96, 165, 250, 0.08);
+            box-shadow: 0 16px 40px rgba(96, 165, 250, 0.2);
         }
     </style>
     <script src="../vendor/pdf-lib/dist/pdf-lib.min.js"></script>
@@ -649,17 +717,19 @@
         </header>
 
         <!-- Initial Upload Dropzone -->
-        <div id="drop-zone" class="drop-zone">
-            <div class="drop-content">
-                <div class="icon-row" style="font-size: 3.5rem; margin-bottom: 1.5rem;">
-                    <span>📝</span>
-                    <span style="opacity: 0.3; margin: 0 1rem;">📄</span>
+        <main id="drop-zone-main" class="drop-zone-container">
+            <div id="drop-zone" class="drop-zone">
+                <div class="drop-content">
+                    <div class="icon-row" style="font-size: 3.5rem; margin-bottom: 1.5rem;">
+                        <span>📝</span>
+                        <span style="opacity: 0.3; margin: 0 1rem;">📄</span>
+                    </div>
+                    <p style="font-size: 1.3rem; font-weight: 500;">Drop PDF to edit document</p>
+                    <p style="margin: 1rem 0;">or <label class="browse-btn" style="cursor: pointer;">Browse Local Files</label></p>
+                    <input type="file" id="file-input" accept=".pdf" hidden>
                 </div>
-                <p style="font-size: 1.3rem; font-weight: 500;">Drop PDF to edit document</p>
-                <p style="margin: 1rem 0;">or <label class="browse-btn" style="cursor: pointer;">Browse Local Files</label></p>
-                <input type="file" id="file-input" accept=".pdf" hidden>
             </div>
-        </div>
+        </main>
 
         <!-- Full Editor Interface (Hidden until file selected) -->
         <div id="editor-workspace-root" class="edit-layout hidden">
