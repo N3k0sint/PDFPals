@@ -340,6 +340,7 @@
         rel="stylesheet">
     <script src="../vendor/pdf-lib/dist/pdf-lib.min.js"></script>
     <script src="../vendor/pdfjs-dist/build/pdf.mjs" type="module"></script>
+    <script src="../js/workflow-bridge.js"></script>
     <script type="module" src="sign-pdf.js"></script>
 </head>
 
@@ -415,9 +416,16 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
+                        <div style="margin-bottom: 1.5rem; background: rgba(var(--primary-rgb), 0.05); padding: 12px; border-radius: 12px; border: 1px solid rgba(var(--primary-rgb), 0.15);">
+                            <label style="display: flex; align-items: center; gap: 8px; font-size: 0.84rem; cursor: pointer; color: var(--text-main); font-weight: 600;">
+                                <input type="checkbox" id="flatten-signature-toggle" checked style="accent-color: var(--primary);">
+                                <span>Flatten Document (Burn in Signature)</span>
+                            </label>
+                            <p style="font-size: 0.74rem; color: var(--text-muted); margin-top: 4px; margin-left: 24px;">Permanently flattens annotations and signature fields directly into vector content stream.</p>
+                        </div>
 
-                    <button id="apply-signatures" class="btn primary full-width action-btn" style="padding: 1rem; border-radius: 12px; font-weight: 700; font-size: 1rem;">Authorize & Download ➔</button>
+                        <button id="apply-signatures" class="btn primary full-width action-btn" style="padding: 1rem; border-radius: 12px; font-weight: 700; font-size: 1rem;">Authorize & Download ➔</button>
+                        <div id="next-action-container"></div>
                 </aside>
             </div>
 

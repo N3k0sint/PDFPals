@@ -6,11 +6,13 @@ const dropZone = document.getElementById('drop-zone');
 const fileInput = document.getElementById('file-input');
 const browseBtn = document.querySelector('.browse-btn');
 const workspace = document.getElementById('workspace');
+const batchWorkspace = document.getElementById('batch-workspace');
 const thumbGrid = document.getElementById('thumbnails-grid');
 const applyBtn = document.getElementById('apply-pn');
 const changePdfBtn = document.getElementById('change-pdf-btn');
+const pipelineNext = document.getElementById('pipeline-next-container');
 
-// Settings
+// Settings Single
 const pnFrom = document.getElementById('pn-from');
 const pnTo = document.getElementById('pn-to');
 const pnStart = document.getElementById('pn-start');
@@ -18,12 +20,34 @@ const pnFormat = document.getElementById('pn-format');
 const pnSize = document.getElementById('pn-size');
 const posPicker = document.getElementById('position-picker');
 
-let pdfBytes = null;
+// Batch Elements
+const batchTitle = document.getElementById('batch-title');
+const batchList = document.getElementById('batch-list');
+const batchAddBtn = document.getElementById('batch-add-btn');
+const batchResetBtn = document.getElementById('batch-reset-btn');
+const batchPosPicker = document.getElementById('batch-position-picker');
+const batchFormat = document.getElementById('batch-pn-format');
+const batchSize = document.getElementById('batch-pn-size');
+const batchApplyBtn = document.getElementById('batch-apply-pn');
+
+let singleFile = null;
+let singleBytes = null;
 let pageCount = 0;
 let currentPos = 'bottom-left';
 let currentMode = 'single';
+let batchPos = 'bottom-center';
+let batchFiles = []; // Array of { file, name, size, bytes, pageCount }
 
-// Position Mapping for Dot placement (relative %)
+function formatBytes(bytes, decimals = 1) {
+    if (!+bytes) return '0 B';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+}
+
+// Position Mapping for Dot placement
 const posMap = {
     'top-left': { top: '5%', left: '5%' },
     'top-center': { top: '5%', left: '50%', transform: 'translateX(-50%)' },
@@ -42,19 +66,39 @@ dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-ove
 dropZone.addEventListener('drop', e => {
     e.preventDefault();
     dropZone.classList.remove('drag-over');
-    if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+    const dropped = Array.from(e.dataTransfer.files).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+    if (dropped.length > 0) handleIncomingFiles(dropped);
 });
+
+browseBtn.addEventListener('click', () => fileInput.click());
 
 fileInput.addEventListener('change', e => {
-    if (e.target.files.length) handleFile(e.target.files[0]);
+    const selected = Array.from(e.target.files);
+    if (selected.length > 0) handleIncomingFiles(selected);
 });
 
-async function handleFile(file) {
-    if (file.type !== 'application/pdf') return alert('Please select a PDF');
-    const buffer = await file.arrayBuffer();
-    pdfBytes = new Uint8Array(buffer.slice(0)); // Clone buffer
+if (window.WorkflowBridge) {
+    window.WorkflowBridge.checkIncomingPipeline((incomingFile) => {
+        handleIncomingFiles([incomingFile]);
+    });
+}
 
-    const loadingTask = pdfjsLib.getDocument({ data: pdfBytes.slice(0) });
+function handleIncomingFiles(files) {
+    if (pipelineNext) pipelineNext.innerHTML = '';
+
+    if (files.length === 1 && batchFiles.length === 0) {
+        handleSingleFile(files[0]);
+    } else {
+        handleBatchFiles(files);
+    }
+}
+
+async function handleSingleFile(file) {
+    singleFile = file;
+    const buffer = await file.arrayBuffer();
+    singleBytes = new Uint8Array(buffer);
+
+    const loadingTask = pdfjsLib.getDocument({ data: singleBytes.slice(0) });
     const pdf = await loadingTask.promise;
     pageCount = pdf.numPages;
 
@@ -63,6 +107,7 @@ async function handleFile(file) {
     pnTo.max = pageCount;
 
     dropZone.classList.add('hidden');
+    batchWorkspace.classList.add('hidden');
     workspace.classList.remove('hidden');
 
     renderThumbnails(pdf);
@@ -84,7 +129,9 @@ async function renderThumbnails(pdf) {
 
         const label = document.createElement('div');
         label.className = 'page-label';
-        label.textContent = i;
+        label.style.marginTop = '6px';
+        label.style.fontWeight = '600';
+        label.textContent = `Page ${i}`;
 
         const dot = document.createElement('div');
         dot.className = 'placement-dot';
@@ -98,12 +145,10 @@ async function renderThumbnails(pdf) {
 }
 
 function updateDotPosition(dot, pageNum) {
-    // Reset styles
     dot.style.top = ''; dot.style.bottom = ''; dot.style.left = ''; dot.style.right = ''; dot.style.transform = '';
 
     let pos = currentPos;
     if (currentMode === 'facing' && pageNum % 2 === 0) {
-        // Swap horizontal position for even pages
         if (pos.includes('left')) pos = pos.replace('left', 'right');
         else if (pos.includes('right')) pos = pos.replace('right', 'left');
     }
@@ -112,39 +157,44 @@ function updateDotPosition(dot, pageNum) {
     Object.assign(dot.style, styles);
 }
 
-// Position Picker Logic
+// Position Picker Single
 posPicker.addEventListener('click', e => {
     const cell = e.target.closest('.pos-cell');
     if (!cell) return;
 
-    document.querySelectorAll('.pos-cell').forEach(c => c.classList.remove('active'));
+    posPicker.querySelectorAll('.pos-cell').forEach(c => c.classList.remove('active'));
     cell.classList.add('active');
     currentPos = cell.dataset.pos;
 
-    // Refresh all dots
     document.querySelectorAll('.placement-dot').forEach((dot, idx) => {
         updateDotPosition(dot, idx + 1);
     });
 });
 
-// Mode Toggle Logic
+// Position Picker Batch
+batchPosPicker.addEventListener('click', e => {
+    const cell = e.target.closest('.pos-cell');
+    if (!cell) return;
+
+    batchPosPicker.querySelectorAll('.pos-cell').forEach(c => c.classList.remove('active'));
+    cell.classList.add('active');
+    batchPos = cell.dataset.pos;
+});
+
+// Mode Toggle
 document.querySelectorAll('input[name="page-mode"]').forEach(radio => {
     radio.addEventListener('change', e => {
         currentMode = e.target.value;
-        
-        // UI Feedback
         document.querySelectorAll('.radio-item').forEach(label => {
             if (label.dataset.mode === currentMode) label.classList.add('active');
             else label.classList.remove('active');
         });
-
         document.querySelectorAll('.placement-dot').forEach((dot, idx) => {
             updateDotPosition(dot, idx + 1);
         });
     });
 });
 
-// Make labels clickable to trigger radio change
 document.querySelectorAll('.radio-item').forEach(label => {
     label.addEventListener('click', () => {
         const radio = label.querySelector('input');
@@ -152,86 +202,237 @@ document.querySelectorAll('.radio-item').forEach(label => {
     });
 });
 
+// Stamping Helper function
+async function stampPageNumbers(bytes, config) {
+    const pdfDoc = await window.PDFLib.PDFDocument.load(bytes.slice(0));
+    const { rgb, StandardFonts } = window.PDFLib;
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+    const pages = pdfDoc.getPages();
+    const totalPages = pages.length;
+    const startPage = (config.from != null ? config.from : 1) - 1;
+    const endPage = (config.to != null ? config.to : totalPages) - 1;
+    const startNum = config.startNum || 1;
+    const fontSize = config.fontSize || 12;
+    const format = config.format || 'simple';
+    const pos = config.position || 'bottom-center';
+    const isFacing = config.mode === 'facing';
+
+    pages.forEach((page, index) => {
+        if (index < startPage || index > endPage) return;
+
+        const { width, height } = page.getSize();
+        const n = startNum + (index - startPage);
+        const m = totalPages;
+
+        let text = '';
+        if (format === 'simple') text = `${n}`;
+        else if (format === 'page-n') text = `Page ${n}`;
+        else if (format === 'n-of-m') text = `Page ${n} of ${m}`;
+
+        const textWidth = font.widthOfTextAtSize(text, fontSize);
+        const textHeight = font.heightAtSize(fontSize);
+
+        let activePos = pos;
+        if (isFacing && (index + 1) % 2 === 0) {
+            if (activePos.includes('left')) activePos = activePos.replace('left', 'right');
+            else if (activePos.includes('right')) activePos = activePos.replace('right', 'left');
+        }
+
+        let x = 0, y = 0;
+        const margin = 30;
+
+        if (activePos.includes('center')) x = (width - textWidth) / 2;
+        else if (activePos.includes('left')) x = margin;
+        else if (activePos.includes('right')) x = width - textWidth - margin;
+
+        if (activePos.includes('top')) y = height - textHeight - margin;
+        else if (activePos.includes('middle')) y = (height - textHeight) / 2;
+        else if (activePos.includes('bottom')) y = margin;
+
+        page.drawText(text, {
+            x, y,
+            size: fontSize,
+            font,
+            color: rgb(0.1, 0.1, 0.1)
+        });
+    });
+
+    pdfDoc.setProducer('PDFPals');
+    pdfDoc.setCreator('PDFPals');
+    return await pdfDoc.save();
+}
+
 applyBtn.onclick = async () => {
     applyBtn.disabled = true;
-    applyBtn.textContent = 'Processing...';
+    applyBtn.textContent = 'Stamping Numbers...';
 
     try {
-        const pdfDoc = await window.PDFLib.PDFDocument.load(pdfBytes.slice(0));
-        const { rgb, StandardFonts } = window.PDFLib;
-        const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-
-        const pages = pdfDoc.getPages();
-        const startPage = parseInt(pnFrom.value) - 1;
-        const endPage = parseInt(pnTo.value) - 1;
-        const startNum = parseInt(pnStart.value) || 1;
-        const fontSize = parseInt(pnSize.value) || 12;
-
-        pages.forEach((page, index) => {
-            if (index < startPage || index > endPage) return;
-
-            const { width, height } = page.getSize();
-            const n = startNum + (index - startPage);
-            const m = pageCount;
-
-            let text = '';
-            const format = pnFormat.value;
-            if (format === 'simple') text = `${n}`;
-            else if (format === 'page-n') text = `Page ${n}`;
-            else if (format === 'n-of-m') text = `Page ${n} of ${m}`;
-
-            const textWidth = font.widthOfTextAtSize(text, fontSize);
-            const textHeight = font.heightAtSize(fontSize);
-
-            let pos = currentPos;
-            if (currentMode === 'facing' && (index + 1) % 2 === 0) {
-                if (pos.includes('left')) pos = pos.replace('left', 'right');
-                else if (pos.includes('right')) pos = pos.replace('right', 'left');
-            }
-
-            let x = 0, y = 0;
-            const margin = 30;
-
-            // X calculation
-            if (pos.includes('center')) x = (width - textWidth) / 2;
-            else if (pos.includes('left')) x = margin;
-            else if (pos.includes('right')) x = width - textWidth - margin;
-
-            // Y calculation
-            if (pos.includes('top')) y = height - textHeight - margin;
-            else if (pos.includes('middle')) y = (height - textHeight) / 2;
-            else if (pos.includes('bottom')) y = margin;
-
-            page.drawText(text, {
-                x, y,
-                size: fontSize,
-                font,
-                color: rgb(0.1, 0.1, 0.1)
-            });
+        const out = await stampPageNumbers(singleBytes, {
+            from: parseInt(pnFrom.value) || 1,
+            to: parseInt(pnTo.value) || pageCount,
+            startNum: parseInt(pnStart.value) || 1,
+            fontSize: parseInt(pnSize.value) || 12,
+            format: pnFormat.value,
+            position: currentPos,
+            mode: currentMode
         });
 
-        pdfDoc.setProducer('PDFPals');
-        pdfDoc.setCreator('PDFPals');
-        const out = await pdfDoc.save();
         const blob = new Blob([out], { type: 'application/pdf' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'numbered_document.pdf';
-        a.click();
-    } catch (e) { alert('Error: ' + e.message); }
-    finally { applyBtn.disabled = false; applyBtn.textContent = 'Add page numbers ➔'; }
+        const outName = singleFile.name.replace(/\.pdf$/i, '_numbered.pdf');
+
+        if (window.MobileBridge) {
+            await window.MobileBridge.saveFile(blob, outName);
+        } else {
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = outName;
+            a.click();
+        }
+
+        if (window.WorkflowBridge && pipelineNext) {
+            window.WorkflowBridge.renderNextActionBar({
+                container: pipelineNext,
+                pdfBytes: out,
+                fileName: outName
+            });
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Error stamping page numbers: ' + e.message);
+    } finally {
+        applyBtn.disabled = false;
+        applyBtn.textContent = 'Generate Index ➔';
+    }
+};
+
+changePdfBtn.onclick = () => {
+    singleFile = null;
+    singleBytes = null;
+    pageCount = 0;
+    thumbGrid.innerHTML = '';
+    dropZone.classList.remove('hidden');
+    workspace.classList.add('hidden');
+    batchWorkspace.classList.add('hidden');
+    fileInput.value = '';
+    if (pipelineNext) pipelineNext.innerHTML = '';
+};
+
+// Batch Functions
+async function handleBatchFiles(files) {
+    dropZone.classList.add('hidden');
+    workspace.classList.add('hidden');
+    batchWorkspace.classList.remove('hidden');
+
+    for (const file of files) {
+        try {
+            const buffer = await file.arrayBuffer();
+            const bytes = new Uint8Array(buffer);
+            const doc = await window.PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
+            batchFiles.push({
+                file,
+                name: file.name,
+                size: file.size,
+                bytes,
+                pageCount: doc.getPageCount()
+            });
+        } catch (err) {
+            console.warn('Batch parse error:', file.name, err);
+        }
+    }
+
+    renderBatchUI();
 }
 
-browseBtn.addEventListener('click', () => fileInput.click());
+function renderBatchUI() {
+    batchTitle.textContent = `Batch Pagination (${batchFiles.length} files)`;
+    batchList.innerHTML = '';
 
-if (changePdfBtn) {
-    changePdfBtn.onclick = () => {
-        pdfBytes = null;
-        pageCount = 0;
-        thumbGrid.innerHTML = '';
-        dropZone.classList.remove('hidden');
-        workspace.classList.add('hidden');
-        fileInput.value = '';
-    };
+    batchFiles.forEach((item, idx) => {
+        const div = document.createElement('div');
+        div.className = 'batch-item';
+
+        div.innerHTML = `
+            <div style="display:flex; align-items:center; gap:0.8rem; min-width:0; flex:1;">
+                <span style="font-size:1.4rem;">📄</span>
+                <div style="min-width:0;">
+                    <div style="font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${item.name}">${item.name}</div>
+                    <div style="font-size:0.8rem; opacity:0.6;">${formatBytes(item.size)} • ${item.pageCount} page${item.pageCount === 1 ? '' : 's'}</div>
+                </div>
+            </div>
+            <button type="button" class="btn secondary outline small remove-b-btn" style="border-radius:8px; color:#ef4444;" title="Remove">✕</button>
+        `;
+
+        div.querySelector('.remove-b-btn').onclick = () => {
+            batchFiles.splice(idx, 1);
+            if (batchFiles.length === 0) batchReset();
+            else renderBatchUI();
+        };
+
+        batchList.appendChild(div);
+    });
 }
 
+batchAddBtn.onclick = () => fileInput.click();
+
+function batchReset() {
+    batchFiles = [];
+    batchList.innerHTML = '';
+    dropZone.classList.remove('hidden');
+    batchWorkspace.classList.add('hidden');
+    workspace.classList.add('hidden');
+    fileInput.value = '';
+    if (pipelineNext) pipelineNext.innerHTML = '';
+}
+
+batchResetBtn.onclick = batchReset;
+
+batchApplyBtn.onclick = async () => {
+    if (batchFiles.length === 0) return alert("Batch queue is empty.");
+
+    batchApplyBtn.disabled = true;
+    batchApplyBtn.textContent = 'Stamping Batch...';
+
+    try {
+        if (!window.JSZip) throw new Error("JSZip is not available.");
+        const zip = new window.JSZip();
+
+        for (let i = 0; i < batchFiles.length; i++) {
+            const item = batchFiles[i];
+            batchApplyBtn.textContent = `Numbering [${i + 1}/${batchFiles.length}]...`;
+
+            const numberedBytes = await stampPageNumbers(item.bytes, {
+                from: 1,
+                to: item.pageCount,
+                startNum: 1,
+                fontSize: parseInt(batchSize.value) || 11,
+                format: batchFormat.value,
+                position: batchPos,
+                mode: 'single'
+            });
+
+            const outName = item.name.replace(/\.pdf$/i, '_numbered.pdf');
+            zip.file(outName, numberedBytes);
+        }
+
+        batchApplyBtn.textContent = 'Packaging ZIP...';
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+
+        if (window.MobileBridge) {
+            await window.MobileBridge.saveFile(zipBlob, 'numbered_documents.zip');
+        } else {
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(zipBlob);
+            a.download = 'numbered_documents.zip';
+            a.click();
+        }
+
+        alert(`Successfully paginated ${batchFiles.length} documents!`);
+    } catch (err) {
+        console.error(err);
+        alert("Batch pagination error: " + err.message);
+    } finally {
+        batchApplyBtn.disabled = false;
+        batchApplyBtn.textContent = 'Number All & Download ZIP ➔';
+    }
+};

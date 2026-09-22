@@ -25,7 +25,9 @@
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
             gap: 2rem;
-            min-height: 700px;
+            min-height: 500px;
+            max-height: 750px;
+            overflow-y: auto;
         }
 
         .sidebar-section {
@@ -41,18 +43,33 @@
             box-shadow: 0 12px 40px rgba(0,0,0,0.4);
         }
 
-        .thumbnail-item {
+        .thumbnail-item, .thumbnail-wrapper {
             background: rgba(0, 0, 0, 0.3);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 12px;
             padding: 10px;
             position: relative;
             transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
-        .thumbnail-item:hover {
-            transform: scale(1.05);
+        .thumbnail-wrapper:hover {
+            transform: translateY(-4px);
             border-color: var(--primary);
+        }
+
+        .placement-dot {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: var(--primary);
+            border: 2px solid #fff;
+            border-radius: 50%;
+            pointer-events: none;
+            box-shadow: 0 0 10px rgba(var(--primary-rgb), 0.8);
+            z-index: 5;
         }
 
         .pos-cell {
@@ -104,13 +121,58 @@
             box-shadow: 0 4px 15px rgba(var(--primary-rgb), 0.3);
         }
 
+        /* Batch styles */
+        .batch-wrapper {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 2rem;
+        }
+
+        .batch-card {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 32px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 2.5rem;
+        }
+
+        .batch-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            max-height: 520px;
+            overflow-y: auto;
+            margin-top: 1.5rem;
+            padding-right: 0.5rem;
+        }
+
+        .batch-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.2rem;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            gap: 1rem;
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        .workspace:not(.hidden),
+        .batch-wrapper:not(.hidden) {
+            display: grid !important;
+            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
     </style>
     <script src="../vendor/pdf-lib/dist/pdf-lib.min.js"></script>
-    <script type="module" src="page-numbers.js"></script>
+    <script src="../vendor/jszip/dist/jszip.min.js"></script>
+    <script src="../js/mobile-bridge.js"></script>
+    <script src="../js/workflow-bridge.js"></script>
 </head>
 
 <body>
@@ -127,7 +189,7 @@
             </div>
         </nav>
 
-        <header style="text-align: center; margin-bottom: 4rem; margin-top: 2rem;">
+        <header style="text-align: center; margin-bottom: 3.5rem; margin-top: 2rem;">
             <h1 style="font-size: 3.2rem; margin-bottom: 1.2rem; background: linear-gradient(135deg, var(--text-main) 0%, var(--primary) 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px;">Page Numbers</h1>
             <p style="color: var(--text-muted); font-size: 1.25rem; max-width: 700px; margin: 0 auto; line-height: 1.6;">Automated pagination and indexing. Define your layout, format, and placement with elegant simplicity.</p>
         </header>
@@ -138,24 +200,26 @@
                     <div class="icon-row" style="font-size: 4rem; margin-bottom: 2rem;">
                         <span>🔢</span>
                     </div>
-                    <p style="font-size: 1.4rem; font-weight: 600;">Drop PDF to begin indexing</p>
-                    <p style="margin: 1.5rem 0; opacity: 0.6;">or <label class="browse-btn" style="text-decoration: underline;">Open Document</label></p>
-                    <input type="file" id="file-input" accept=".pdf" hidden>
+                    <p style="font-size: 1.4rem; font-weight: 600;">Drop PDF files to begin indexing</p>
+                    <p style="margin: 1.5rem 0; opacity: 0.6;">Supports single documents or multi-file batch</p>
+                    <button type="button" class="btn primary browse-btn" style="border-radius: 12px; padding: 0.8rem 1.8rem; font-weight: 600;">Open Document</button>
+                    <input type="file" id="file-input" accept=".pdf" multiple hidden>
                 </div>
             </div>
 
+            <!-- Single Workspace -->
             <div id="workspace" class="workspace hidden">
                 <div id="thumbnails-grid" class="thumbnails-grid">
                     <!-- Thumbnails with dots will be injected here -->
                 </div>
 
                 <aside class="sidebar-section">
-                    <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem;">
+                    <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
                         <h2 style="margin:0; font-size: 1.3rem; letter-spacing: -0.5px;">Index Settings</h2>
                         <button id="change-pdf-btn" class="btn secondary outline small" style="border-radius: 8px;">Switch</button>
                     </div>
 
-                    <div class="setting-group" style="margin-bottom: 2rem;">
+                    <div class="setting-group" style="margin-bottom: 1.8rem;">
                         <label style="display: block; margin-bottom: 0.8rem; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--primary);">Layout Mode</label>
                         <div class="radio-group" style="display: flex; gap: 1rem;">
                             <label class="radio-item active" data-mode="single">
@@ -167,7 +231,7 @@
                         </div>
                     </div>
 
-                    <div class="setting-group" style="margin-bottom: 2rem;">
+                    <div class="setting-group" style="margin-bottom: 1.8rem;">
                         <label style="display: block; margin-bottom: 0.8rem; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--primary);">Anchor Position</label>
                         <div class="position-picker" id="position-picker" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; aspect-ratio: 1; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
                             <div class="pos-cell" data-pos="top-left"></div>
@@ -182,7 +246,7 @@
                         </div>
                     </div>
 
-                    <div class="setting-group" style="margin-bottom: 2rem;">
+                    <div class="setting-group" style="margin-bottom: 1.8rem;">
                         <label style="display: block; margin-bottom: 0.8rem; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--primary);">Range & Start</label>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                             <div class="input-range">
@@ -192,22 +256,76 @@
                                 <input type="number" id="pn-to" value="1" min="1" style="width: 100%;">
                             </div>
                         </div>
-                        <input type="number" id="pn-start" value="1" min="1" style="width: 100%; margin-top: 10px;">
+                        <input type="number" id="pn-start" value="1" min="1" style="width: 100%; margin-top: 10px;" placeholder="Start number">
                     </div>
 
-                    <div class="setting-group" style="margin-bottom: 2.5rem;">
+                    <div class="setting-group" style="margin-bottom: 2rem;">
                         <label style="display: block; margin-bottom: 0.8rem; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--primary);">Format & Typography</label>
                         <select id="pn-format" style="width: 100%; margin-bottom: 10px;">
                             <option value="simple">{n}</option>
                             <option value="page-n">Page {n}</option>
                             <option value="n-of-m">Page {n} of {m}</option>
                         </select>
-                        <input type="number" id="pn-size" value="12" min="6" max="72" style="width: 100%;">
+                        <input type="number" id="pn-size" value="12" min="6" max="72" style="width: 100%;" placeholder="Font size">
                     </div>
 
                     <button id="apply-pn" class="btn primary full-width action-btn" style="padding: 1rem; border-radius: 12px; font-weight: 700; font-size: 1rem;">Generate Index ➔</button>
                 </aside>
             </div>
+
+            <!-- Batch Workspace -->
+            <div id="batch-workspace" class="batch-wrapper hidden">
+                <div class="batch-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                        <div>
+                            <h2 style="font-size: 1.5rem; margin-bottom: 0.3rem;" id="batch-title">Batch Pagination (0 files)</h2>
+                            <p style="color: var(--text-muted); font-size: 0.9rem;">Uniform pagination applied across all documents in queue.</p>
+                        </div>
+                        <div style="display: flex; gap: 0.6rem;">
+                            <button id="batch-add-btn" class="btn secondary outline small" style="border-radius: 8px;">+ Add Files</button>
+                            <button id="batch-reset-btn" class="btn secondary outline small" style="border-radius: 8px; color: #ef4444;">Clear</button>
+                        </div>
+                    </div>
+
+                    <div id="batch-list" class="batch-list"></div>
+                </div>
+
+                <aside class="sidebar-section">
+                    <h2 style="margin:0 0 1.8rem; font-size: 1.3rem;">Batch Pagination Settings</h2>
+
+                    <div class="setting-group" style="margin-bottom: 1.8rem;">
+                        <label style="display: block; margin-bottom: 0.8rem; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--primary);">Anchor Position</label>
+                        <div class="position-picker" id="batch-position-picker" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; aspect-ratio: 1; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);">
+                            <div class="pos-cell" data-pos="top-left"></div>
+                            <div class="pos-cell" data-pos="top-center"></div>
+                            <div class="pos-cell" data-pos="top-right"></div>
+                            <div class="pos-cell" data-pos="middle-left"></div>
+                            <div class="pos-cell" data-pos="middle-center"></div>
+                            <div class="pos-cell" data-pos="middle-right"></div>
+                            <div class="pos-cell" data-pos="bottom-left"></div>
+                            <div class="pos-cell active" data-pos="bottom-center"></div>
+                            <div class="pos-cell" data-pos="bottom-right"></div>
+                        </div>
+                    </div>
+
+                    <div class="setting-group" style="margin-bottom: 2rem;">
+                        <label style="display: block; margin-bottom: 0.8rem; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--primary);">Format & Size</label>
+                        <select id="batch-pn-format" style="width: 100%; margin-bottom: 10px;">
+                            <option value="simple">{n}</option>
+                            <option value="page-n">Page {n}</option>
+                            <option value="n-of-m" selected>Page {n} of {m}</option>
+                        </select>
+                        <input type="number" id="batch-pn-size" value="11" min="6" max="72" style="width: 100%;" placeholder="Font size">
+                    </div>
+
+                    <button id="batch-apply-pn" class="btn primary full-width action-btn" style="padding: 1.1rem; border-radius: 12px; font-weight: 700; font-size: 1rem;">
+                        Number All & Download ZIP ➔
+                    </button>
+                </aside>
+            </div>
+
+            <!-- Next Action Container for Pipeline -->
+            <div id="pipeline-next-container" style="max-width: 1400px; margin: 2.5rem auto;"></div>
         </main>
 
         <footer>
@@ -215,6 +333,7 @@
         </footer>
     </div>
     <script src="../js/theme.js?v=100"></script>
+    <script type="module" src="page-numbers.js"></script>
 </body>
 
 </html>

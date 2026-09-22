@@ -17,6 +17,9 @@
                     style="height: 32px; vertical-align: middle; margin-right: 8px;"> PDFPals
             </a>
             <div class="tool-nav">
+                <button id="cmd-palette-btn" class="btn secondary sm" style="border-radius: 20px; padding: 6px 14px; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <span>🔍</span> Search <kbd style="background: rgba(0,0,0,0.08); border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; font-size: 0.72rem; font-family: monospace;">Ctrl+K</kbd>
+                </button>
                 <button id="theme-toggle" aria-label="Toggle Theme">
                     <span class="icon">☀️</span>
                 </button>
@@ -151,6 +154,11 @@
                 <h3>Metadata Editor</h3>
                 <p>Inspect, edit, copy, and sanitize metadata for PDF, Word, Excel, and PowerPoint.</p>
             </a>
+            <a href="tools/form-filler.html" class="tool-card" data-category="edit">
+                <div class="icon-box purple">📝</div>
+                <h3>Form Filler & Flatten</h3>
+                <p>Fill interactive AcroForm fields, checkboxes, and permanently flatten PDF documents.</p>
+            </a>
 
             <!-- Security -->
             <a href="tools/unlock-pdf.html" class="tool-card" data-category="security">
@@ -172,7 +180,57 @@
             </a>
         </main>
 
+        <!-- Fullscreen Drag & Drop Action Hub Overlay -->
+        <div id="global-drag-overlay" class="global-drag-overlay">
+            <div class="drag-overlay-box">
+                <div class="drag-icon-pulse">📂</div>
+                <h2 style="font-size: 1.8rem; margin-bottom: 0.5rem;">Drop document here</h2>
+                <p style="color: #cbd5e1; font-size: 1rem;">Release to choose an instant workflow action</p>
+            </div>
+        </div>
+
+        <!-- Smart Action Modal after dropping file on dashboard -->
+        <div id="smart-action-modal" class="smart-action-modal hidden">
+            <div class="smart-action-dialog">
+                <div class="smart-dialog-header">
+                    <div>
+                        <h3 id="dropped-file-name" style="font-size: 1.25rem; font-weight: 700; color: var(--text-main);">document.pdf</h3>
+                        <span id="dropped-file-size" style="font-size: 0.82rem; color: var(--text-muted);">Calculating size...</span>
+                    </div>
+                    <button id="close-action-modal" class="close-modal-btn" aria-label="Close modal">✕</button>
+                </div>
+                <p style="margin: 0.9rem 0 1.2rem; font-size: 0.92rem; color: var(--text-muted); font-weight: 500;">Choose an instant action for this file:</p>
+                <div class="smart-action-grid">
+                    <button class="smart-act-btn" data-tool="edit-pdf.html"><span>📝</span> Edit PDF</button>
+                    <button class="smart-act-btn" data-tool="form-filler.html"><span>📋</span> Form Filler</button>
+                    <button class="smart-act-btn" data-tool="compress-pdf.html"><span>📉</span> Compress</button>
+                    <button class="smart-act-btn" data-tool="split-pdf.html"><span>✂️</span> Split Pages</button>
+                    <button class="smart-act-btn" data-tool="sign-pdf.html"><span>✍️</span> Sign PDF</button>
+                    <button class="smart-act-btn" data-tool="watermark-pdf.html"><span>🔏</span> Watermark</button>
+                    <button class="smart-act-btn" data-tool="rotate-pdf.html"><span>↻</span> Rotate</button>
+                    <button class="smart-act-btn" data-tool="protect-pdf.html"><span>🔒</span> Protect PDF</button>
+                    <button class="smart-act-btn" data-tool="pdf-to-word.html"><span>📄</span> PDF to Word</button>
+                    <button class="smart-act-btn" data-tool="edit-metadata.html"><span>🔍</span> Metadata</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Command Palette Modal (Ctrl + K) -->
+        <div id="cmd-palette-modal" class="cmd-palette-modal hidden">
+            <div class="cmd-palette-box">
+                <div class="cmd-search-row">
+                    <span class="cmd-search-icon">🔍</span>
+                    <input type="text" id="cmd-search-input" placeholder="Search tools, conversions, or actions (e.g., 'merge', 'sign', 'word')..." autocomplete="off" spellcheck="false">
+                    <kbd class="cmd-esc-badge">ESC</kbd>
+                </div>
+                <div class="cmd-results-list" id="cmd-results-list">
+                    <!-- Injected dynamically -->
+                </div>
+            </div>
+        </div>
+
         <script src="js/theme.js?v=100"></script>
+        <script src="js/workflow-bridge.js"></script>
         <script src="js/dashboard.js"></script>
 
         <footer>

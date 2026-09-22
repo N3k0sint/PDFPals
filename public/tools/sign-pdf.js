@@ -543,6 +543,10 @@ document.addEventListener('DOMContentLoaded', () => {
         requestAnimationFrame(() => renderPDF());
     }
 
+    if (window.WorkflowBridge) {
+        window.WorkflowBridge.checkIncomingPipeline(handleFile);
+    }
+
     // Apply & Save
     applyBtn.onclick = async () => {
         if (!pdfBytes) {
@@ -623,16 +627,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
+            // Flatten form annotations if option is selected
+            const flattenToggle = document.getElementById('flatten-signature-toggle');
+            if (flattenToggle && flattenToggle.checked) {
+                try {
+                    const form = pdfDoc.getForm();
+                    form.flatten();
+                } catch (e) {
+                    // Ignore if no AcroForm in document
+                }
+            }
+
             pdfDoc.setProducer('PDFPals');
             pdfDoc.setCreator('PDFPals');
             const signedBytes = await pdfDoc.save();
             const blob = new Blob([signedBytes], { type: 'application/pdf' });
             await MobileBridge.saveFile(blob, 'signed_by_pdfpals.pdf');
+
+            // Render WorkflowBridge Next Action chaining bar
+            if (window.WorkflowBridge) {
+                const nextActionContainer = document.getElementById('next-action-container');
+                window.WorkflowBridge.renderNextActionBar(nextActionContainer, blob, 'signed_by_pdfpals.pdf');
+            }
         } catch (err) {
             console.error(err);
             alert("Error saving PDF.");
         } finally {
-            applyBtn.innerText = "Sign & Download ➔";
+            applyBtn.innerText = "Authorize & Download ➔";
             applyBtn.disabled = false;
         }
     };

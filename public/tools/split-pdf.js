@@ -13,10 +13,9 @@ const extractBtn = document.getElementById('extract-btn');
 const resetBtn = document.getElementById('reset-btn');
 
 let currentFile = null;
-let currentPdf = null; // PDF.js document
-let selectedPages = new Set(); // 1-based page indices
+let currentPdf = null;
+let selectedPages = new Set();
 
-// Event Listeners
 dropZone.addEventListener('dragover', (e) => {
     e.preventDefault();
     dropZone.classList.add('drag-over');
@@ -34,8 +33,6 @@ dropZone.addEventListener('drop', (e) => {
         handleFile(file);
     }
 });
-
-
 
 fileInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
@@ -59,7 +56,6 @@ async function handleFile(file) {
 
         pageCountSpan.textContent = `${currentPdf.numPages} pages found`;
 
-        // Render thumbnails
         for (let i = 1; i <= currentPdf.numPages; i++) {
             await renderThumbnail(i);
         }
@@ -74,7 +70,7 @@ async function handleFile(file) {
 
 async function renderThumbnail(pageNum) {
     const page = await currentPdf.getPage(pageNum);
-    const viewport = page.getViewport({ scale: 0.5 }); // Thumbnail scale
+    const viewport = page.getViewport({ scale: 0.5 });
 
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
@@ -92,7 +88,6 @@ async function renderThumbnail(pageNum) {
     checkbox.type = 'checkbox';
     checkbox.className = 'page-checkbox';
     checkbox.checked = false;
-    // Handle checkbox click separately
     checkbox.onclick = (e) => {
         e.stopPropagation();
         togglePageSelection(card, pageNum);
@@ -140,7 +135,6 @@ async function extractPages() {
     const srcPdf = await window.PDFLib.PDFDocument.load(arrayBuffer);
     const newPdf = await window.PDFLib.PDFDocument.create();
 
-    // window.PDFLib uses 0-based index
     const indices = Array.from(selectedPages).map(p => p - 1).sort((a, b) => a - b);
     const copiedPages = await newPdf.copyPages(srcPdf, indices);
 
@@ -149,12 +143,27 @@ async function extractPages() {
     newPdf.setProducer('PDFPals');
     newPdf.setCreator('PDFPals');
     const pdfBytes = await newPdf.save();
-    downloadPDF(pdfBytes, `extracted_from_${currentFile.name}`);
+    await downloadPDF(pdfBytes, `extracted_from_${currentFile.name}`);
 }
 
 async function downloadPDF(pdfBytes, filename) {
     const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-    await MobileBridge.saveFile(blob, filename);
+    if (window.MobileBridge) {
+        await window.MobileBridge.saveFile(blob, filename);
+    } else {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        a.click();
+    }
+    if (window.WorkflowBridge) {
+        const cont = document.getElementById('pipeline-next-container') || controls;
+        window.WorkflowBridge.renderNextActionBar({
+            container: cont,
+            pdfBytes: pdfBytes,
+            fileName: filename
+        });
+    }
 }
 
 function resetApp() {
@@ -168,6 +177,8 @@ function resetApp() {
     controls.classList.add('hidden');
     previewContainer.classList.add('hidden');
     showLoading(false);
+    const pnc = document.getElementById('pipeline-next-container');
+    if (pnc) pnc.innerHTML = '';
 }
 
 function showLoading(show) {
@@ -175,7 +186,10 @@ function showLoading(show) {
     else loading.classList.add('hidden');
 }
 
-
-
-
 browseBtn.addEventListener('click', () => fileInput.click());
+
+if (window.WorkflowBridge) {
+    window.WorkflowBridge.checkIncomingPipeline((incomingFile) => {
+        handleFile(incomingFile);
+    });
+}

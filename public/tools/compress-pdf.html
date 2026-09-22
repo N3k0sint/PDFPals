@@ -78,13 +78,15 @@
 
         .radio-option strong {
             display: block;
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             margin-bottom: 0.25rem;
         }
 
         .radio-option span {
             font-size: 0.85rem;
-            opacity: 0.6;
+            opacity: 0.65;
+            display: block;
+            line-height: 1.4;
         }
 
         #progress-container {
@@ -108,7 +110,54 @@
             height: 100%;
             background: linear-gradient(90deg, var(--primary), #fff);
             width: 0%;
-            transition: width 0.4s cubic-bezier(0.1, 0.7, 0.1, 1);
+            transition: width 0.3s ease;
+        }
+
+        /* Batch styles */
+        .batch-wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 2.5rem;
+        }
+
+        .batch-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 2.5rem;
+        }
+
+        .batch-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            max-height: 440px;
+            overflow-y: auto;
+            margin-top: 1.5rem;
+            padding-right: 0.5rem;
+        }
+
+        .batch-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.2rem;
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 14px;
+            gap: 1rem;
+        }
+
+        .batch-stat-badge {
+            background: rgba(var(--primary-rgb), 0.15);
+            color: var(--primary);
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
         }
 
         @keyframes fadeIn {
@@ -116,13 +165,15 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .watermark-workspace:not(.hidden) {
-            display: grid !important;
+        .watermark-workspace:not(.hidden),
+        .batch-wrapper:not(.hidden) {
             animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
     </style>
     <script src="../vendor/pdf-lib/dist/pdf-lib.min.js"></script>
-    <script type="module" src="compress-pdf.js"></script>
+    <script src="../vendor/jszip/dist/jszip.min.js"></script>
+    <script src="../js/mobile-bridge.js"></script>
+    <script src="../js/workflow-bridge.js"></script>
 </head>
 
 <body>
@@ -141,7 +192,7 @@
 
         <header style="text-align: center; margin-bottom: 3rem; margin-top: 2rem;">
             <h1 style="font-size: 2.8rem; margin-bottom: 1rem; background: linear-gradient(135deg, var(--text-main) 0%, var(--primary) 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Neural Compress</h1>
-            <p style="color: var(--text-muted); font-size: 1.1rem; max-width: 600px; margin: 0 auto;">Shrink your files for faster sharing without sacrificing critical document clarity.</p>
+            <p style="color: var(--text-muted); font-size: 1.1rem; max-width: 650px; margin: 0 auto;">Shrink your files for faster sharing without sacrificing clarity. Choose lossless vector stream optimization or intelligent image compression.</p>
         </header>
 
         <main>
@@ -150,40 +201,43 @@
                     <div class="icon-row" style="font-size: 3.5rem; margin-bottom: 1.5rem;">
                         <span>📉</span>
                     </div>
-                    <p style="font-size: 1.3rem; font-weight: 500;">Drop PDF to optimize size</p>
-                    <p style="margin: 1rem 0;">or <label class="browse-btn">Pick Local File</label></p>
-                    <input type="file" id="file-input" accept=".pdf" hidden>
+                    <p style="font-size: 1.3rem; font-weight: 500;">Drop PDF files to optimize size</p>
+                    <p style="margin: 1rem 0; opacity: 0.7;">Single document or multi-file batch queue</p>
+                    <button type="button" class="btn primary browse-btn" style="border-radius: 12px; padding: 0.8rem 1.8rem; font-weight: 600;">Pick Local File</button>
+                    <input type="file" id="file-input" accept=".pdf" multiple hidden>
                 </div>
             </div>
 
+            <!-- Single Document Workspace -->
             <div id="workspace" class="watermark-workspace hidden">
                 <div class="document-section">
-                    <div id="file-preview" class="file-preview" style="text-align: center;">
-                        <div class="file-icon" style="font-size: 6rem; margin-bottom: 1rem;">📄</div>
-                        <div id="file-name" class="file-name" style="font-weight: 600; font-size: 1.2rem;">filename.pdf</div>
-                        <div id="file-size" style="margin-top: 0.5rem; font-size: 0.9rem; opacity: 0.5; font-family: monospace;"></div>
-                        <button id="change-pdf-btn" class="btn secondary outline small" style="margin-top:2.5rem; border-radius: 10px;">Switch Document</button>
+                    <div id="file-preview" class="file-preview" style="text-align: center; max-width: 100%;">
+                        <div class="file-icon" style="font-size: 5.5rem; margin-bottom: 1rem;">📄</div>
+                        <div id="file-name" class="file-name" style="font-weight: 600; font-size: 1.2rem; word-break: break-all;">filename.pdf</div>
+                        <div id="file-size" style="margin-top: 0.5rem; font-size: 0.95rem; opacity: 0.7; font-family: monospace;"></div>
+                        <div id="result-badge" style="margin-top: 1rem; display: none; padding: 0.8rem 1.2rem; background: rgba(var(--primary-rgb), 0.15); border: 1px solid var(--primary); border-radius: 12px; font-weight: 600;"></div>
+                        <button id="change-pdf-btn" class="btn secondary outline small" style="margin-top: 2rem; border-radius: 10px;">Switch Document</button>
                     </div>
                 </div>
 
                 <aside class="sidebar-section" id="sidebar">
-                    <h2 style="font-size: 1.4rem; font-weight: 700; margin-bottom: 2rem;">Compression Engine</h2>
+                    <h2 style="font-size: 1.4rem; font-weight: 700; margin-bottom: 1.8rem;">Compression Engine</h2>
 
                     <div class="setting-group" id="comp-options">
+                        <div class="radio-option active" data-val="lossless">
+                            <input type="radio" id="comp-lossless" name="compression" value="lossless" checked>
+                            <strong>⚡ Lossless Vector Stream (Crisp)</strong>
+                            <span>Optimizes cross-reference tables & object streams. Preserves 100% vector text and fonts.</span>
+                        </div>
+                        <div class="radio-option" data-val="recommended">
+                            <input type="radio" id="comp-recommended" name="compression" value="recommended">
+                            <strong>High Fidelity Balance</strong>
+                            <span>Intelligent downsampling for documents with images and scans.</span>
+                        </div>
                         <div class="radio-option" data-val="extreme">
                             <input type="radio" id="comp-extreme" name="compression" value="extreme">
-                            <strong>Extreme Compression</strong>
-                            <span>Maximum shrink, lower resolution</span>
-                        </div>
-                        <div class="radio-option active" data-val="recommended">
-                            <input type="radio" id="comp-recommended" name="compression" value="recommended" checked>
-                            <strong>High Fidelity</strong>
-                            <span>Perfect balance of size & clarity</span>
-                        </div>
-                        <div class="radio-option" data-val="less">
-                            <input type="radio" id="comp-less" name="compression" value="less">
-                            <strong>Soft Compression</strong>
-                            <span>Native quality, minimal reduction</span>
+                            <strong>Maximum Shrink</strong>
+                            <span>Aggressive compression for large scanned PDFs.</span>
                         </div>
                     </div>
 
@@ -197,16 +251,70 @@
                     <button id="apply-btn" class="btn primary full-width action-btn" style="padding: 1.2rem; font-weight: 700; border-radius: 12px; margin-top: 1rem;">Start Compression ➔</button>
                 </aside>
             </div>
-        </main>
+
+            <!-- Batch Document Workspace -->
+            <div id="batch-workspace" class="batch-wrapper hidden">
+                <div class="batch-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                        <div>
+                            <h2 style="font-size: 1.5rem; margin-bottom: 0.3rem;" id="batch-title">Batch Compression (0 files)</h2>
+                            <p style="color: var(--text-muted); font-size: 0.9rem;">Compress all documents using the selected engine profile.</p>
+                        </div>
+                        <div style="display: flex; gap: 0.6rem;">
+                            <button id="batch-add-btn" class="btn secondary outline small" style="border-radius: 8px;">+ Add Files</button>
+                            <button id="batch-reset-btn" class="btn secondary outline small" style="border-radius: 8px; color: #ef4444;">Clear</button>
+                        </div>
+                    </div>
+
+                    <div id="batch-list" class="batch-list">
+                        <!-- Batch items -->
+                    </div>
+                </div>
+
+                <aside class="sidebar-section">
+                    <h2 style="font-size: 1.4rem; font-weight: 700; margin-bottom: 1.8rem;">Batch Profile</h2>
+
+                    <div class="setting-group" id="batch-comp-options">
+                        <div class="radio-option active" data-val="lossless">
+                            <input type="radio" id="b-comp-lossless" name="batch-compression" value="lossless" checked>
+                            <strong>⚡ Lossless Vector Stream</strong>
+                            <span>Retains razor-sharp vector text.</span>
+                        </div>
+                        <div class="radio-option" data-val="recommended">
+                            <input type="radio" id="b-comp-recommended" name="batch-compression" value="recommended">
+                            <strong>High Fidelity Balance</strong>
+                            <span>Optimal for mixed & scanned documents.</span>
+                        </div>
+                        <div class="radio-option" data-val="extreme">
+                            <input type="radio" id="b-comp-extreme" name="batch-compression" value="extreme">
+                            <strong>Maximum Shrink</strong>
+                            <span>Aggressive size reduction.</span>
+                        </div>
+                    </div>
+
+                    <div id="batch-progress-container" class="hidden" style="margin: 1.5rem 0; padding: 1.2rem; background: rgba(0,0,0,0.3); border-radius: 12px; border: 1px solid rgba(var(--primary-rgb),0.2);">
+                        <div style="font-weight: 600; font-size: 0.85rem;" id="batch-progress-text">Processing batch...</div>
+                        <div class="progress-bar-bg" style="margin-top: 0.8rem;">
+                            <div id="batch-progress-bar" style="height: 100%; background: var(--primary); width: 0%;"></div>
+                        </div>
+                    </div>
+
+                    <button id="batch-apply-btn" class="btn primary full-width action-btn" style="padding: 1.2rem; font-weight: 700; border-radius: 12px; margin-top: 1rem;">
+                        Compress All & Download ZIP ➔
+                    </button>
+                </aside>
+            </div>
+
+            <!-- Next Action Container for Pipeline -->
+            <div id="pipeline-next-container" style="max-width: 1200px; margin: 2.5rem auto;"></div>
         </main>
 
+        <footer>
+            <p>&copy; 2026 PDFPals. Locally processed, secure & private.</p>
         </footer>
     </div>
-    <script src="../js/mobile-bridge.js"></script>
     <script src="../js/theme.js?v=100"></script>
+    <script type="module" src="compress-pdf.js"></script>
 </body>
 
 </html>
-
-
-

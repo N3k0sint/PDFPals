@@ -2312,6 +2312,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const exportName = originalName.replace(/\.pdf$/i, '_edited.pdf');
 
             await MobileBridge.saveFile(blob, exportName);
+
+            if (window.WorkflowBridge) {
+                const cont = document.getElementById('pipeline-next-container') || editorRoot;
+                window.WorkflowBridge.renderNextActionBar({
+                    container: cont,
+                    pdfBytes: savedBytes,
+                    fileName: exportName
+                });
+            }
         } catch (err) {
             console.error('Error baking PDF:', err);
             alert('Failed to save edited PDF: ' + err.message);

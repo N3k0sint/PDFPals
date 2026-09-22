@@ -245,6 +245,10 @@ fileInput.addEventListener('change', (e) => {
 
 browseBtn.addEventListener('click', () => fileInput.click());
 
+if (window.WorkflowBridge) {
+    window.WorkflowBridge.checkIncomingPipeline(handleFile);
+}
+
 // Load & Preview PDF
 async function handleFile(file) {
     if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
@@ -632,12 +636,28 @@ applyBtn.addEventListener('click', async () => {
             }
         }
 
+        // Flatten form annotations if option is checked
+        const flattenToggle = document.getElementById('flatten-watermark-toggle');
+        if (flattenToggle && flattenToggle.checked) {
+            try {
+                const form = pdfDoc.getForm();
+                form.flatten();
+            } catch (e) {
+                // Non-form documents are already vector embedded
+            }
+        }
+
         pdfDoc.setProducer('PDFPals');
         pdfDoc.setCreator('PDFPals');
         const outBytes = await pdfDoc.save();
         const blob = new Blob([outBytes], { type: 'application/pdf' });
         const fileName = fileNameDisplay.textContent.replace('.pdf', '_watermarked.pdf');
         await MobileBridge.saveFile(blob, fileName);
+
+        if (window.WorkflowBridge) {
+            const nextActionContainer = document.getElementById('next-action-container');
+            window.WorkflowBridge.renderNextActionBar(nextActionContainer, blob, fileName);
+        }
     } catch (e) {
         console.error("WATERMARK ERROR DETAILS:", e);
         alert(`Failed to apply watermark. Error: ${e.message}`);

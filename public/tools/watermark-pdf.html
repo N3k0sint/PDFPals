@@ -398,7 +398,16 @@
                         </div>
                     </div>
 
+                    <div style="margin-top: 1.2rem; background: rgba(var(--primary-rgb), 0.05); padding: 12px; border-radius: 12px; border: 1px solid rgba(var(--primary-rgb), 0.15);">
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.84rem; cursor: pointer; color: var(--text-main); font-weight: 600;">
+                            <input type="checkbox" id="flatten-watermark-toggle" checked style="accent-color: var(--primary);">
+                            <span>Flatten Watermark (Embed Permanently)</span>
+                        </label>
+                        <p style="font-size: 0.74rem; color: var(--text-muted); margin-top: 4px; margin-left: 24px;">Flattens watermark directly into vector page stream to prevent removal or separation.</p>
+                    </div>
+
                     <button id="apply-btn" class="btn primary full-width action-btn" style="padding: 1.2rem; font-weight: 700; border-radius: 12px; margin-top: 1rem;">Apply Watermark ➔</button>
+                    <div id="next-action-container"></div>
                 </aside>
             </div>
         </main>
@@ -409,6 +418,7 @@
     </div>
     <!-- Essential Libraries -->
     <script src="../vendor/pdf-lib/dist/pdf-lib.min.js"></script>
+    <script src="../js/workflow-bridge.js"></script>
     <script type="module" src="watermark-pdf.js"></script>
     <script src="../js/mobile-bridge.js"></script>
     <script src="../js/theme.js?v=100"></script>

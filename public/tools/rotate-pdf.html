@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDFPals - Local & Secure</title>
+    <title>PDFPals - Rotate PDF</title>
     <link rel="stylesheet" href="../css/main.css?v=100">
     <link rel="stylesheet" href="../css/tool.css">
     <style>
@@ -26,6 +26,8 @@
             padding: 1.5rem 2.5rem;
             margin-bottom: 2rem;
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            flex-wrap: wrap;
+            gap: 1rem;
         }
 
         .page-grid {
@@ -86,6 +88,80 @@
             color: #000;
         }
 
+        /* Batch Mode Styles */
+        .batch-container {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 2.5rem;
+            backdrop-filter: blur(12px);
+        }
+
+        .batch-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin: 2rem 0;
+            max-height: 480px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        .batch-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.2rem 1.5rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            gap: 1.5rem;
+            transition: border-color 0.2s;
+        }
+
+        .batch-item:hover {
+            border-color: rgba(var(--primary-rgb), 0.4);
+        }
+
+        .batch-file-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .batch-file-name {
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .batch-file-meta {
+            font-size: 0.85rem;
+            opacity: 0.6;
+            margin-top: 0.2rem;
+        }
+
+        .batch-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            flex-shrink: 0;
+        }
+
+        .badge-rot {
+            background: rgba(var(--primary-rgb), 0.15);
+            color: var(--primary);
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            min-width: 52px;
+            text-align: center;
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -97,7 +173,9 @@
         }
     </style>
     <script src="../vendor/pdf-lib/dist/pdf-lib.min.js"></script>
-    <script type="module" src="rotate-pdf.js"></script>
+    <script src="../vendor/jszip/dist/jszip.min.js"></script>
+    <script src="../js/mobile-bridge.js"></script>
+    <script src="../js/workflow-bridge.js"></script>
 </head>
 
 <body>
@@ -114,9 +192,9 @@
             </div>
         </nav>
 
-        <header style="text-align: center; margin-bottom: 4rem; margin-top: 2rem;">
+        <header style="text-align: center; margin-bottom: 3.5rem; margin-top: 2rem;">
             <h1 style="font-size: 3.2rem; margin-bottom: 1.2rem; background: linear-gradient(135deg, var(--text-main) 0%, var(--primary) 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px;">Rotate Panorama</h1>
-            <p style="color: var(--text-muted); font-size: 1.25rem; max-width: 700px; margin: 0 auto; line-height: 1.6;">Fix orientation issues across your entire document. Single-page or batch rotation, handled with fluid precision.</p>
+            <p style="color: var(--text-muted); font-size: 1.25rem; max-width: 700px; margin: 0 auto; line-height: 1.6;">Fix orientation issues across your entire document. Single-page inspection or batch multi-file rotation with pure vector preservation.</p>
         </header>
 
         <main>
@@ -125,20 +203,22 @@
                     <div class="icon-row" style="font-size: 4rem; margin-bottom: 2rem;">
                         <span>↻</span>
                     </div>
-                    <p style="font-size: 1.4rem; font-weight: 600;">Drop PDF to fix orientation</p>
-                    <p style="margin: 1.5rem 0; opacity: 0.6;">or <label class="browse-btn" style="text-decoration: underline;">Browse Local Storage</label></p>
-                    <input type="file" id="file-input" accept=".pdf" hidden>
+                    <p style="font-size: 1.4rem; font-weight: 600;">Drop PDF files to fix orientation</p>
+                    <p style="margin: 1.5rem 0; opacity: 0.6;">Supports single document or multi-file batch queue</p>
+                    <button type="button" class="btn primary browse-btn" style="border-radius: 12px; padding: 0.8rem 1.8rem; font-weight: 600;">Browse Local Storage</button>
+                    <input type="file" id="file-input" accept=".pdf" multiple hidden>
                 </div>
             </div>
 
             <div id="loading" class="loading hidden">
                 <div class="spinner"></div>
-                <p style="margin-top: 1.5rem; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; font-size: 0.8rem; color: var(--primary);">Processing Rotational Vectors...</p>
+                <p id="loading-text" style="margin-top: 1.5rem; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; font-size: 0.8rem; color: var(--primary);">Processing Rotational Vectors...</p>
             </div>
 
+            <!-- Single Document Workspace -->
             <div id="workspace" class="workspace hidden">
                 <div class="workspace-header">
-                    <div style="display: flex; align-items: center; gap: 1.5rem;">
+                    <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
                         <button id="rotate-left-all" class="btn secondary small" style="border-radius: 10px; background: rgba(255,255,255,0.05);">↺ All Left</button>
                         <button id="rotate-right-all" class="btn secondary small" style="border-radius: 10px; background: rgba(255,255,255,0.05);">↻ All Right</button>
                         <button id="change-pdf-btn" class="btn secondary outline small" style="border-radius: 8px;">Switch File</button>
@@ -152,16 +232,47 @@
                     <!-- Thumbnails will be injected here -->
                 </div>
             </div>
+
+            <!-- Batch Queue Workspace -->
+            <div id="batch-workspace" class="workspace hidden">
+                <div class="batch-container">
+                    <div class="workspace-header" style="background: transparent; border: none; padding: 0; margin-bottom: 1.5rem; box-shadow: none;">
+                        <div>
+                            <h2 style="font-size: 1.6rem; margin-bottom: 0.3rem;" id="batch-title">Batch Queue (0 files)</h2>
+                            <p style="color: var(--text-muted); font-size: 0.95rem;">Set global orientation or fine-tune individual document rotations.</p>
+                        </div>
+                        <div style="display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap;">
+                            <button id="batch-rot-left" class="btn secondary small" style="border-radius: 10px;">↺ All 90° CCW</button>
+                            <button id="batch-rot-right" class="btn secondary small" style="border-radius: 10px;">↻ All 90° CW</button>
+                            <button id="batch-rot-180" class="btn secondary small" style="border-radius: 10px;">↻ All 180°</button>
+                            <button id="batch-add-more" class="btn secondary outline small" style="border-radius: 10px;">+ Add Files</button>
+                            <button id="batch-reset" class="btn secondary outline small" style="border-radius: 10px; color: #ef4444;">Clear</button>
+                        </div>
+                    </div>
+
+                    <div id="batch-list" class="batch-list">
+                        <!-- Batch items injected here -->
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.08); flex-wrap: wrap; gap: 1rem;">
+                        <span id="batch-summary" style="font-size: 0.95rem; opacity: 0.7;">0 files ready</span>
+                        <button id="batch-export-btn" class="btn primary" style="border-radius: 12px; font-weight: 700; padding: 1rem 2.2rem; font-size: 1rem;">
+                            Rotate & Download ZIP ➔
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Next Action Container for Pipeline -->
+            <div id="pipeline-next-container" style="max-width: 1400px; margin: 2rem auto;"></div>
         </main>
 
         <footer>
-            <p>&copy; 2024 PDFPals. Locally processed, secure & private.</p>
+            <p>&copy; 2026 PDFPals. Locally processed, secure & private.</p>
         </footer>
     </div>
-    <script src="../js/theme.js?v=99"></script>
+    <script src="../js/theme.js?v=100"></script>
     <script type="module" src="rotate-pdf.js"></script>
 </body>
 
 </html>
-
-

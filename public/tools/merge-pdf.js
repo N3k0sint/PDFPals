@@ -26,8 +26,6 @@ dropZone.addEventListener('drop', (e) => {
     addFiles(files);
 });
 
-
-
 fileInput.addEventListener('change', (e) => {
     const files = Array.from(e.target.files);
     addFiles(files);
@@ -59,7 +57,7 @@ function renderFileList() {
     fileListContainer.innerHTML = '';
     selectedFiles.forEach((file, index) => {
         const item = document.createElement('div');
-        item.className = 'page-card'; // Reusing card style
+        item.className = 'page-card';
         item.style.padding = '1rem';
         item.style.display = 'flex';
         item.style.alignItems = 'center';
@@ -107,12 +105,27 @@ async function mergePDFs() {
     mergedPdf.setProducer('PDFPals');
     mergedPdf.setCreator('PDFPals');
     const pdfBytes = await mergedPdf.save();
-    downloadPDF(pdfBytes, 'merged-document.pdf');
+    await downloadPDF(pdfBytes, 'merged-document.pdf');
 }
 
 async function downloadPDF(pdfBytes, filename) {
     const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-    await MobileBridge.saveFile(blob, filename);
+    if (window.MobileBridge) {
+        await window.MobileBridge.saveFile(blob, filename);
+    } else {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        a.click();
+    }
+    if (window.WorkflowBridge) {
+        const cont = document.getElementById('pipeline-next-container') || controls;
+        window.WorkflowBridge.renderNextActionBar({
+            container: cont,
+            pdfBytes: pdfBytes,
+            fileName: filename
+        });
+    }
 }
 
 if (changePdfBtn) {
@@ -121,10 +134,15 @@ if (changePdfBtn) {
         updateUI();
         dropZone.classList.remove('hidden');
         fileInput.value = '';
+        const pnc = document.getElementById('pipeline-next-container');
+        if (pnc) pnc.innerHTML = '';
     };
 }
 
-
-
-
 browseBtn.addEventListener('click', () => fileInput.click());
+
+if (window.WorkflowBridge) {
+    window.WorkflowBridge.checkIncomingPipeline((incomingFile) => {
+        addFiles([incomingFile]);
+    });
+}
