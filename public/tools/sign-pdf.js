@@ -24,6 +24,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const colorBtns = document.querySelectorAll('.color-btn');
     const sigFileInput = document.getElementById('sig-file-input');
     const sigUploadZone = document.getElementById('signature-upload-zone');
+    const uploadPrompt = document.getElementById('upload-prompt');
+    const uploadPreviewContainer = document.getElementById('upload-preview-container');
+    const uploadPreviewImg = document.getElementById('upload-preview-img');
+    const uploadChangeBtn = document.getElementById('upload-change-btn');
     const signaturePad = document.getElementById('signature-pad');
     const clearPad = document.getElementById('clear-pad');
     const applyBtn = document.getElementById('apply-signatures');
@@ -38,6 +42,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeMode = 'tab-draw';
     let isDrawing = false;
     let ctx = null;
+    let pendingUpload = null;
+    let activeSelectedElementId = null;
 
     if (signaturePad) {
         ctx = signaturePad.getContext('2d');
@@ -76,7 +82,6 @@ document.addEventListener('DOMContentLoaded', () => {
         signatureTypePreview.style.color = activeColor;
         signatureTypePreview.innerText = text;
 
-        // Update all font previews
         document.querySelectorAll('.font-option').forEach(btn => {
             btn.innerText = text;
         });
@@ -136,7 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
         signaturePad.height = height * ratio;
         signaturePad.style.width = width + 'px';
         signaturePad.style.height = height + 'px';
-        ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform before scale
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.scale(ratio, ratio);
         ctx.lineJoin = 'round';
         ctx.lineCap = 'round';
@@ -148,7 +153,6 @@ document.addEventListener('DOMContentLoaded', () => {
     signaturePad.addEventListener('mousemove', draw);
     signaturePad.addEventListener('mouseup', stopDrawing);
 
-    // Touch Support
     signaturePad.addEventListener('touchstart', (e) => {
         const touch = e.touches[0];
         const rect = signaturePad.getBoundingClientRect();
@@ -188,9 +192,217 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.clearRect(0, 0, signaturePad.width, signaturePad.height);
     };
 
-    // File Handling (Upload Zone)
+    // Upload Signature Image Handling
+    function handleSignatureImageFile(file) {
+        if (!file || !file.type.startsWith('image/')) {
+            alert('Please select a valid image file (PNG, JPG, WebP, SVG).');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (re) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth || img.width;
+                canvas.height = img.naturalHeight || img.height;
+                const tCtx = canvas.getContext('2d');
+                tCtx.clearRect(0, 0, canvas.width, canvas.height);
+                tCtx.drawImage(img, 0, 0);
+
+                const dataUrl = canvas.toDataURL('image/png');
+                pendingUpload = {
+                    dataUrl,
+                    width: canvas.width,
+                    height: canvas.height
+                };
+
+                // Show preview inside modal
+                if (uploadPreviewImg && uploadPreviewContainer && uploadPrompt) {
+                    uploadPreviewImg.src = dataUrl;
+                    uploadPrompt.classList.add('hidden');
+                    uploadPreviewContainer.classList.remove('hidden');
+                }
+            };
+            img.src = re.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    if (sigUploadZone) {
+        sigUploadZone.onclick = (e) => {
+            if (e.target === uploadChangeBtn || e.target.closest('#upload-change-btn')) {
+                sigFileInput.click();
+            } else if (!pendingUpload) {
+                sigFileInput.click();
+            }
+        };
+
+        sigUploadZone.ondragover = (e) => {
+            e.preventDefault();
+            sigUploadZone.style.borderColor = 'var(--primary)';
+            sigUploadZone.style.background = 'rgba(var(--primary-rgb), 0.08)';
+        };
+
+        sigUploadZone.ondragleave = () => {
+            sigUploadZone.style.borderColor = 'rgba(255,255,255,0.2)';
+            sigUploadZone.style.background = 'transparent';
+        };
+
+        sigUploadZone.ondrop = (e) => {
+            e.preventDefault();
+            sigUploadZone.style.borderColor = 'rgba(255,255,255,0.2)';
+            sigUploadZone.style.background = 'transparent';
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                handleSignatureImageFile(e.dataTransfer.files[0]);
+            }
+        };
+    }
+
+    if (sigFileInput) {
+        sigFileInput.onchange = (e) => {
+            if (e.target.files && e.target.files.length > 0) {
+                handleSignatureImageFile(e.target.files[0]);
+            }
+        };
+    }
+
+    if (uploadChangeBtn) {
+        uploadChangeBtn.onclick = (e) => {
+            e.stopPropagation();
+            sigFileInput.click();
+        };
+    }
+
+    // Save Signature from Modal
+    saveSignatureBtn.onclick = () => {
+        if (activeMode === 'tab-draw') {
+            const dataUrl = signaturePad.toDataURL();
+            addSavedSignature(dataUrl, signaturePad.width, signaturePad.height);
+        } else if (activeMode === 'tab-type') {
+            const canvas = document.createElement('canvas');
+            canvas.width = 600;
+            canvas.height = 200;
+            const tCtx = canvas.getContext('2d');
+            tCtx.clearRect(0, 0, canvas.width, canvas.height);
+            tCtx.fillStyle = activeColor;
+            tCtx.font = `60px ${activeFont}`;
+            tCtx.textAlign = 'center';
+            tCtx.textBaseline = 'middle';
+            tCtx.fillText(signerNameInput.value || 'Signature', 300, 100);
+            addSavedSignature(canvas.toDataURL(), 600, 200);
+        } else if (activeMode === 'tab-upload') {
+            if (!pendingUpload) {
+                alert('Please choose or drop an image first.');
+                return;
+            }
+            addSavedSignature(pendingUpload.dataUrl, pendingUpload.width, pendingUpload.height);
+            // Reset upload preview
+            pendingUpload = null;
+            if (uploadPrompt) uploadPrompt.classList.remove('hidden');
+            if (uploadPreviewContainer) uploadPreviewContainer.classList.add('hidden');
+            if (sigFileInput) sigFileInput.value = '';
+        }
+        signatureModal.classList.add('hidden');
+    };
+
+    function addSavedSignature(dataUrl, naturalWidth = 300, naturalHeight = 150) {
+        const id = Date.now();
+        const aspect = (naturalWidth && naturalHeight) ? (naturalWidth / naturalHeight) : 2;
+        savedSignatures.push({ id, dataUrl, naturalWidth, naturalHeight, aspect });
+
+        const item = document.createElement('div');
+        item.className = 'signature-preview-item';
+        item.draggable = true;
+        item.dataset.id = id;
+        item.dataset.type = 'signature';
+        item.title = 'Click to place on PDF or drag & drop';
+
+        const img = new Image();
+        img.src = dataUrl;
+        img.draggable = false;
+        img.style.pointerEvents = 'none';
+
+        const del = document.createElement('button');
+        del.className = 'delete-sig-btn';
+        del.innerHTML = '&times;';
+        del.title = 'Delete credential';
+        del.onclick = (e) => {
+            e.stopPropagation();
+            savedSignatures = savedSignatures.filter(s => s.id !== id);
+            item.remove();
+        };
+
+        item.appendChild(img);
+        item.appendChild(del);
+
+        // Click-to-place support
+        item.onclick = (e) => {
+            if (e.target === del || e.target.closest('.delete-sig-btn')) return;
+            placeAtCurrentViewport('signature', id);
+        };
+
+        item.ondragstart = (e) => {
+            e.dataTransfer.setData('source-type', 'signature');
+            e.dataTransfer.setData('source-id', id);
+        };
+
+        mySignaturesList.insertBefore(item, addSignatureBtn);
+
+        // Automatically place on current PDF if workspace is ready
+        if (pdfBytes) {
+            placeAtCurrentViewport('signature', id);
+        }
+    }
+
+    // Draggable / Clickable Sidebar Metadata Fields
+    function bindDraggableFields() {
+        document.querySelectorAll('.draggable-field').forEach(field => {
+            field.style.cursor = 'pointer';
+            field.title = 'Click to place on PDF or drag & drop';
+
+            field.ondragstart = (e) => {
+                e.dataTransfer.setData('source-type', field.dataset.type);
+            };
+
+            field.onclick = () => {
+                placeAtCurrentViewport(field.dataset.type, null);
+            };
+        });
+    }
+    bindDraggableFields();
+
+    // Helper: Find current visible page and place element in center
+    function placeAtCurrentViewport(type, sigId) {
+        const wrappers = document.querySelectorAll('.page-wrapper');
+        if (wrappers.length === 0) return;
+
+        let targetWrapper = wrappers[0];
+        const previewPanel = document.querySelector('.preview-panel');
+        const scrollMid = previewPanel ? (previewPanel.scrollTop + previewPanel.clientHeight / 2) : 0;
+
+        for (const w of wrappers) {
+            const wTop = w.offsetTop;
+            const wBottom = wTop + w.offsetHeight;
+            if (scrollMid >= wTop && scrollMid <= wBottom) {
+                targetWrapper = w;
+                break;
+            }
+        }
+
+        const pageIndex = parseInt(targetWrapper.dataset.pageIndex, 10);
+        const centerX = targetWrapper.offsetWidth / 2;
+        const centerY = targetWrapper.offsetHeight / 2;
+        const viewport = {
+            width: targetWrapper.offsetWidth,
+            height: targetWrapper.offsetHeight
+        };
+
+        placeElement(type, pageIndex, centerX, centerY, viewport, sigId);
+    }
+
+    // PDF Loading & Drop Zone
     dropZone.onclick = (e) => {
-        // Only trigger click if the event didn't come from the label's default behavior
         if (e.target.tagName !== 'LABEL') {
             fileInput.click();
         }
@@ -209,29 +421,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (file) handleFile(file);
     };
 
-    // Modal & Tab Logic
-
-    // Save Signature
-    saveSignatureBtn.onclick = () => {
-        if (activeMode === 'tab-draw') {
-            addSavedSignature(signaturePad.toDataURL());
-        } else if (activeMode === 'tab-type') {
-            const canvas = document.createElement('canvas');
-            canvas.width = 600;
-            canvas.height = 200;
-            const tCtx = canvas.getContext('2d');
-            tCtx.clearRect(0, 0, canvas.width, canvas.height);
-            tCtx.fillStyle = activeColor;
-            tCtx.font = `60px ${activeFont}`;
-            tCtx.textAlign = 'center';
-            tCtx.textBaseline = 'middle';
-            tCtx.fillText(signerNameInput.value || 'Signature', 300, 100);
-            addSavedSignature(canvas.toDataURL());
-        }
-        signatureModal.classList.add('hidden');
-    };
-
-    // Change PDF / Reset
     if (changePdfBtn) {
         changePdfBtn.onclick = () => {
             pdfBytes = null;
@@ -239,59 +428,27 @@ document.addEventListener('DOMContentLoaded', () => {
             pdfContainer.innerHTML = '';
             workspace.classList.add('hidden');
             dropZone.classList.remove('hidden');
-            fileInput.value = ''; // Reset file input
+            fileInput.value = '';
         };
     }
 
-    function addSavedSignature(dataUrl) {
-        const id = Date.now();
-        savedSignatures.push({ id, dataUrl });
-
-        const item = document.createElement('div');
-        item.className = 'signature-preview-item';
-        item.draggable = true;
-        item.dataset.id = id;
-        item.dataset.type = 'signature';
-
-        const img = new Image();
-        img.src = dataUrl;
-
-        const del = document.createElement('button');
-        del.className = 'delete-sig-btn';
-        del.innerHTML = '&times;';
-        del.onclick = (e) => {
-            e.stopPropagation();
-            savedSignatures = savedSignatures.filter(s => s.id !== id);
-            item.remove();
-        };
-
-        item.appendChild(img);
-        item.appendChild(del);
-
-        item.ondragstart = (e) => {
-            e.dataTransfer.setData('source-type', 'signature');
-            e.dataTransfer.setData('source-id', id);
-        };
-
-        mySignaturesList.insertBefore(item, addSignatureBtn);
+    async function handleFile(file) {
+        const buffer = await file.arrayBuffer();
+        pdfBytes = new Uint8Array(buffer);
+        dropZone.classList.add('hidden');
+        workspace.classList.remove('hidden');
+        requestAnimationFrame(() => renderPDF());
     }
 
-    // Sidebar Draggable Fields
-    function bindDraggableFields() {
-        document.querySelectorAll('.draggable-field').forEach(field => {
-            field.ondragstart = (e) => {
-                e.dataTransfer.setData('source-type', field.dataset.type);
-            };
-        });
+    if (window.WorkflowBridge) {
+        window.WorkflowBridge.checkIncomingPipeline(handleFile);
     }
-    bindDraggableFields();
 
-    // Workspace Drop & Place
+    // Render PDF Pages
     async function renderPDF() {
         if (!pdfBytes) return;
         pdfContainer.innerHTML = '<div class="spinner-container" style="display:flex; flex-direction:column; align-items:center; gap:1rem;"><span class="spinner" style="width:40px; height:40px; border:4px solid rgba(255,255,255,0.1); border-top-color:var(--primary-color); border-radius:50%; animation: spin 1s linear infinite;"></span><p style="opacity:0.6;">Rendering PDF...</p></div>';
         try {
-            // Standardize loading with cloned buffer
             const loadingTask = pdfjsLib.getDocument({ data: pdfBytes.slice(0) });
             const pdf = await loadingTask.promise;
             pdfContainer.innerHTML = '';
@@ -300,7 +457,7 @@ document.addEventListener('DOMContentLoaded', () => {
             for (let i = 1; i <= pdf.numPages; i++) {
                 const page = await pdf.getPage(i);
                 const stdViewport = page.getViewport({ scale: 1.0 });
-                const fitScale = containerWidth / stdViewport.width;
+                const fitScale = Math.min(1.5, Math.max(0.5, containerWidth / stdViewport.width));
                 const viewport = page.getViewport({ scale: fitScale });
 
                 const wrapper = document.createElement('div');
@@ -330,23 +487,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     placeElement(type, i - 1, x, y, viewport, sigId);
                 };
 
-                // Mobile "Tap-to-Place" Support
+                // Deselect fields when clicking background
                 overlay.onclick = (e) => {
-                    if (window.innerWidth > 1024) return; // Only for mobile/tablet behavior
-                    
-                    // Find active selection or just use current initials/name if none
-                    const selectedField = document.querySelector('.draggable-field.active');
-                    const type = selectedField ? selectedField.dataset.type : 'initials';
-                    
-                    const rect = overlay.getBoundingClientRect();
-                    const x = e.clientX - rect.left;
-                    const y = e.clientY - rect.top;
-                    
-                    // For signatures, we need a saved one. If none, do nothing.
-                    if (type === 'signature' && savedSignatures.length === 0) return;
-                    const sigId = type === 'signature' ? savedSignatures[savedSignatures.length - 1].id : null;
-
-                    placeElement(type, i - 1, x, y, viewport, sigId);
+                    if (e.target === overlay) {
+                        deselectAllFields();
+                    }
                 };
 
                 wrapper.appendChild(canvas);
@@ -359,36 +504,74 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function deselectAllFields() {
+        activeSelectedElementId = null;
+        document.querySelectorAll('.placed-field').forEach(f => {
+            f.classList.remove('selected');
+            const tb = f.querySelector('.field-toolbar');
+            if (tb) tb.classList.add('hidden');
+        });
+    }
+
     function placeElement(type, pageIndex, x, y, viewport, sigId) {
+        if (!type) return;
+
         let content = '';
-        let width = 150;
+        let width = 160;
         let height = 50;
+        let aspectRatio = 160 / 50;
 
         if (type === 'signature') {
             const sig = savedSignatures.find(s => s.id == sigId);
             if (!sig) return;
             content = sig.dataUrl;
-            width = 150; height = 75;
+            aspectRatio = sig.aspect || (sig.naturalWidth && sig.naturalHeight ? sig.naturalWidth / sig.naturalHeight : 2);
+            
+            // Smart proportional sizing
+            const maxW = 200;
+            const maxH = 100;
+            if (aspectRatio >= 1) {
+                width = maxW;
+                height = Math.round(width / aspectRatio);
+                if (height > maxH) {
+                    height = maxH;
+                    width = Math.round(height * aspectRatio);
+                }
+            } else {
+                height = maxH;
+                width = Math.round(height * aspectRatio);
+            }
         } else if (type === 'name') {
-            content = signerNameInput.value || 'Full Name';
+            content = signerNameInput.value || 'Authorized Name';
+            width = 170; height = 44;
+            aspectRatio = 170 / 44;
         } else if (type === 'date') {
-            content = new Date().toLocaleDateString();
+            content = new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+            width = 130; height = 36;
+            aspectRatio = 130 / 36;
         } else if (type === 'initials') {
-            content = signerInitialsInput.value || 'Initials';
-            width = 60; height = 40;
+            content = signerInitialsInput.value || 'JD';
+            width = 70; height = 40;
+            aspectRatio = 70 / 40;
         }
 
         const id = Date.now();
         const element = {
-            id, type, content, pageIndex,
-            x: x - (width / 2),
-            y: y - (height / 2),
-            width, height,
+            id,
+            type,
+            content,
+            pageIndex,
+            x: Math.max(10, Math.round(x - (width / 2))),
+            y: Math.max(10, Math.round(y - (height / 2))),
+            width,
+            height,
+            initialWidth: width,
+            initialHeight: height,
             vWidth: viewport.width,
             vHeight: viewport.height,
-            color: activeColor, // Capture current color
-            font: activeFont,   // Capture current font
-            aspectRatio: width / height // Store base aspect ratio
+            color: activeColor,
+            font: activeFont,
+            aspectRatio
         };
 
         placedElements.push(element);
@@ -397,111 +580,156 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderPlacedElement(el) {
         const wrapper = document.querySelector(`.page-wrapper[data-page-index="${el.pageIndex}"]`);
+        if (!wrapper) return;
+
         const div = document.createElement('div');
-        div.className = `placed-field ${el.type}-obj`;
+        div.className = `placed-field ${el.type}-obj selected`;
         div.id = `el-${el.id}`;
         div.style.left = `${el.x}px`;
         div.style.top = `${el.y}px`;
         div.style.width = `${el.width}px`;
         div.style.height = `${el.height}px`;
 
+        // Content
         if (el.type === 'signature') {
             const img = new Image();
             img.src = el.content;
             img.style.width = '100%';
             img.style.height = '100%';
-            img.style.objectFit = 'contain'; // Prevent squishing in UI
+            img.style.objectFit = 'contain';
+            img.draggable = false;
+            img.style.pointerEvents = 'none';
             div.appendChild(img);
         } else {
             div.innerText = el.content;
-            div.style.fontSize = `${el.height * 0.5}px`;
+            div.style.fontSize = `${Math.round(el.height * 0.48)}px`;
             div.style.display = 'flex';
             div.style.alignItems = 'center';
             div.style.justifyContent = 'center';
-            div.style.color = el.color; // Use stored color
-            div.style.fontFamily = el.type === 'initials' ? el.font : 'inherit'; // Use stored font
+            div.style.color = el.color;
+            div.style.fontFamily = el.type === 'initials' ? el.font : 'inherit';
+            div.style.fontWeight = 'bold';
         }
 
+        // Delete button (✕)
         const del = document.createElement('div');
         del.className = 'field-delete';
         del.innerHTML = '&times;';
-        del.title = "Remove";
+        del.title = 'Remove';
+        del.onmousedown = (e) => e.stopPropagation();
         del.onclick = (e) => {
             e.stopPropagation();
             placedElements = placedElements.filter(ev => ev.id !== el.id);
             div.remove();
         };
-
-        // Prevent dragging when clicking the delete button or resize handle
-        del.onmousedown = (e) => e.stopPropagation();
-
         div.appendChild(del);
 
-        const resizer = document.createElement('div');
-        resizer.className = 'resize-handle';
-        resizer.onmousedown = (e) => e.stopPropagation();
-        div.appendChild(resizer);
+        // Floating Quick Sizing Toolbar
+        const toolbar = document.createElement('div');
+        toolbar.className = 'field-toolbar';
+        toolbar.onmousedown = (e) => e.stopPropagation();
 
-        wrapper.appendChild(div);
+        const btnDec = document.createElement('button');
+        btnDec.className = 'tb-btn';
+        btnDec.innerHTML = '&minus;';
+        btnDec.title = 'Shrink size (-15%)';
+        btnDec.onclick = (e) => {
+            e.stopPropagation();
+            scaleElement(el, div, 0.85);
+        };
 
-        // Draggable inside PDF
-        let isMov = false;
-        let isRes = false;
-        let sx, sy, sw, sh;
+        const sizeLabel = document.createElement('span');
+        sizeLabel.className = 'tb-label';
+        sizeLabel.textContent = '100%';
 
-        div.onmousedown = (e) => {
-            if (e.target.className === 'resize-handle') {
-                isRes = true;
-                sx = e.clientX;
-                sy = e.clientY;
-                sw = div.offsetWidth;
-                sh = div.offsetHeight;
+        const btnInc = document.createElement('button');
+        btnInc.className = 'tb-btn';
+        btnInc.innerHTML = '&plus;';
+        btnInc.title = 'Enlarge size (+15%)';
+        btnInc.onclick = (e) => {
+            e.stopPropagation();
+            scaleElement(el, div, 1.15);
+        };
+
+        const divider = document.createElement('div');
+        divider.className = 'tb-divider';
+
+        const btnDel = document.createElement('button');
+        btnDel.className = 'tb-btn';
+        btnDel.innerHTML = '🗑️';
+        btnDel.title = 'Delete element';
+        btnDel.style.fontSize = '12px';
+        btnDel.onclick = (e) => {
+            e.stopPropagation();
+            placedElements = placedElements.filter(ev => ev.id !== el.id);
+            div.remove();
+        };
+
+        toolbar.appendChild(btnDec);
+        toolbar.appendChild(sizeLabel);
+        toolbar.appendChild(btnInc);
+        toolbar.appendChild(divider);
+        toolbar.appendChild(btnDel);
+        div.appendChild(toolbar);
+
+        // 4 Corner Resize Handles
+        const handles = ['se', 'sw', 'ne', 'nw'];
+        handles.forEach(pos => {
+            const h = document.createElement('div');
+            h.className = `resize-handle ${pos}`;
+            h.dataset.pos = pos;
+            div.appendChild(h);
+
+            // Direct Handle Dragging Logic
+            h.onmousedown = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-            } else {
-                isMov = true;
-                sx = e.clientX - div.offsetLeft;
-                sy = e.clientY - div.offsetTop;
-                document.body.style.cursor = 'grabbing';
-                div.style.zIndex = '10000';
-                div.style.pointerEvents = 'none'; // Allow drop/drag through
-                e.stopPropagation();
+                initiateResize(e, pos, el, div, sizeLabel);
+            };
+
+            h.ontouchstart = (e) => {
+                if (e.touches.length === 1) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    initiateResize(e.touches[0], pos, el, div, sizeLabel);
+                }
+            };
+        });
+
+        wrapper.appendChild(div);
+        deselectAllFields();
+        div.classList.add('selected');
+        activeSelectedElementId = el.id;
+
+        // Selection & Dragging Movement
+        div.onmousedown = (e) => {
+            if (e.target.classList.contains('resize-handle') || e.target.closest('.field-toolbar') || e.target.classList.contains('field-delete')) {
+                return;
             }
 
-            const onMouseMove = (me) => {
-                if (isRes) {
-                    const dx = me.clientX - sx;
-                    const dy = me.clientY - sy;
-                    
-                    if (el.type === 'signature') {
-                        // Maintain aspect ratio for signatures
-                        const newWidth = Math.max(40, sw + dx);
-                        el.width = newWidth;
-                        el.height = newWidth / el.aspectRatio;
-                    } else {
-                        el.width = Math.max(40, sw + dx);
-                        el.height = Math.max(20, sh + dy);
-                    }
+            deselectAllFields();
+            div.classList.add('selected');
+            const tb = div.querySelector('.field-toolbar');
+            if (tb) tb.classList.remove('hidden');
+            activeSelectedElementId = el.id;
 
-                    div.style.width = `${el.width}px`;
-                    div.style.height = `${el.height}px`;
-                    if (el.type !== 'signature') {
-                        div.style.fontSize = `${el.height * 0.5}px`;
-                    }
-                } else if (isMov) {
-                    el.x = me.clientX - sx;
-                    el.y = me.clientY - sy;
-                    div.style.left = `${el.x}px`;
-                    div.style.top = `${el.y}px`;
-                }
+            let sx = e.clientX - div.offsetLeft;
+            let sy = e.clientY - div.offsetTop;
+            document.body.style.cursor = 'grabbing';
+            div.style.zIndex = '1000';
+
+            const onMouseMove = (me) => {
+                const newX = Math.max(0, Math.min(wrapper.offsetWidth - el.width, me.clientX - sx));
+                const newY = Math.max(0, Math.min(wrapper.offsetHeight - el.height, me.clientY - sy));
+                el.x = newX;
+                el.y = newY;
+                div.style.left = `${newX}px`;
+                div.style.top = `${newY}px`;
             };
 
             const onMouseUp = () => {
-                isMov = false;
-                isRes = false;
                 document.body.style.cursor = '';
                 div.style.zIndex = '20';
-                div.style.pointerEvents = 'auto';
                 window.removeEventListener('mousemove', onMouseMove);
                 window.removeEventListener('mouseup', onMouseUp);
             };
@@ -511,58 +739,116 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Signature Creation Upload
-    sigUploadZone.onclick = () => sigFileInput.click();
-    sigFileInput.onchange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (re) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    const tCtx = canvas.getContext('2d');
-                    tCtx.clearRect(0, 0, canvas.width, canvas.height);
-                    tCtx.drawImage(img, 0, 0);
-                    addSavedSignature(canvas.toDataURL());
-                };
-                img.src = re.target.result;
-            };
-            reader.readAsDataURL(file);
+    function scaleElement(el, div, factor) {
+        const minW = 35;
+        const maxW = 500;
+        const newW = Math.max(minW, Math.min(maxW, Math.round(el.width * factor)));
+        const newH = Math.max(15, Math.round(newW / el.aspectRatio));
+
+        el.width = newW;
+        el.height = newH;
+        div.style.width = `${newW}px`;
+        div.style.height = `${newH}px`;
+
+        if (el.type !== 'signature') {
+            div.style.fontSize = `${Math.round(newH * 0.48)}px`;
         }
-    };
 
-    async function handleFile(file) {
-        const buffer = await file.arrayBuffer();
-        pdfBytes = new Uint8Array(buffer);
-        dropZone.classList.add('hidden');
-        workspace.classList.remove('hidden');
-        // Ensure DOM has updated layout before rendering
-        requestAnimationFrame(() => renderPDF());
+        const sizeLabel = div.querySelector('.tb-label');
+        if (sizeLabel) {
+            const pct = Math.round((newW / el.initialWidth) * 100);
+            sizeLabel.textContent = `${pct}%`;
+        }
     }
 
-    if (window.WorkflowBridge) {
-        window.WorkflowBridge.checkIncomingPipeline(handleFile);
+    function initiateResize(startEvent, pos, el, div, sizeLabel) {
+        const startX = startEvent.clientX;
+        const startY = startEvent.clientY;
+        const startW = el.width;
+        const startH = el.height;
+        const startLeft = el.x;
+        const startTop = el.y;
+        document.body.style.cursor = pos.includes('se') || pos.includes('nw') ? 'nwse-resize' : 'nesw-resize';
+
+        const onResizeMove = (me) => {
+            const clientX = me.clientX !== undefined ? me.clientX : (me.touches ? me.touches[0].clientX : startX);
+            const clientY = me.clientY !== undefined ? me.clientY : (me.touches ? me.touches[0].clientY : startY);
+            const dx = clientX - startX;
+            const dy = clientY - startY;
+
+            let newW = startW;
+            let newH = startH;
+            let newX = startLeft;
+            let newY = startTop;
+
+            if (pos === 'se') {
+                newW = Math.max(35, startW + dx);
+                newH = el.type === 'signature' ? (newW / el.aspectRatio) : Math.max(15, startH + dy);
+            } else if (pos === 'sw') {
+                newW = Math.max(35, startW - dx);
+                newH = el.type === 'signature' ? (newW / el.aspectRatio) : Math.max(15, startH + dy);
+                newX = startLeft + (startW - newW);
+            } else if (pos === 'ne') {
+                newW = Math.max(35, startW + dx);
+                newH = el.type === 'signature' ? (newW / el.aspectRatio) : Math.max(15, startH - dy);
+                newY = startTop + (startH - newH);
+            } else if (pos === 'nw') {
+                newW = Math.max(35, startW - dx);
+                newH = el.type === 'signature' ? (newW / el.aspectRatio) : Math.max(15, startH - dy);
+                newX = startLeft + (startW - newW);
+                newY = startTop + (startH - newH);
+            }
+
+            el.width = Math.round(newW);
+            el.height = Math.round(newH);
+            el.x = Math.round(newX);
+            el.y = Math.round(newY);
+
+            div.style.width = `${el.width}px`;
+            div.style.height = `${el.height}px`;
+            div.style.left = `${el.x}px`;
+            div.style.top = `${el.y}px`;
+
+            if (el.type !== 'signature') {
+                div.style.fontSize = `${Math.round(el.height * 0.48)}px`;
+            }
+
+            if (sizeLabel) {
+                const pct = Math.round((el.width / el.initialWidth) * 100);
+                sizeLabel.textContent = `${pct}%`;
+            }
+        };
+
+        const onResizeEnd = () => {
+            document.body.style.cursor = '';
+            window.removeEventListener('mousemove', onResizeMove);
+            window.removeEventListener('mouseup', onResizeEnd);
+            window.removeEventListener('touchmove', onResizeMove);
+            window.removeEventListener('touchend', onResizeEnd);
+        };
+
+        window.addEventListener('mousemove', onResizeMove);
+        window.addEventListener('mouseup', onResizeEnd);
+        window.addEventListener('touchmove', onResizeMove, { passive: true });
+        window.addEventListener('touchend', onResizeEnd);
     }
 
-    // Apply & Save
+    // Apply & Save to PDF
     applyBtn.onclick = async () => {
         if (!pdfBytes) {
-            alert("No PDF loaded.");
+            alert('No PDF loaded.');
             return;
         }
         if (placedElements.length === 0) {
-            alert("Please place at least one element on the PDF.");
+            alert('Please place at least one signature or identity credential on the PDF.');
             return;
         }
 
-        applyBtn.innerHTML = '<span class="spinner" style="width:16px; height:16px; border:2px solid #fff; border-top-color:transparent; border-radius:50%; display:inline-block; animation: spin 0.8s linear infinite; margin-right:8px;"></span> Hardening PDF...';
+        applyBtn.innerHTML = '<span class="spinner" style="width:16px; height:16px; border:2px solid #fff; border-top-color:transparent; border-radius:50%; display:inline-block; animation: spin 0.8s linear infinite; margin-right:8px;"></span> Burning In Signatures...';
         applyBtn.disabled = true;
 
         try {
-            const { PDFDocument, rgb } = window.PDFLib;
+            const { PDFDocument } = window.PDFLib;
             const pdfDoc = await PDFDocument.load(pdfBytes.slice(0));
             const pages = pdfDoc.getPages();
 
@@ -574,43 +860,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 const pdfX = el.x * scaleX;
                 const pdfY = height - ((el.y + el.height) * scaleY);
 
-                // Unified Rendering Loop: All elements are rendered to high-res canvas first
+                // High-res canvas rendering loop
                 const renderCanvas = document.createElement('canvas');
-                const renderScale = 4; // High-res multiplier
-                renderCanvas.width = el.width * renderScale;
-                renderCanvas.height = el.height * renderScale;
+                const renderScale = 4;
+                renderCanvas.width = Math.max(10, el.width * renderScale);
+                renderCanvas.height = Math.max(10, el.height * renderScale);
                 const rCtx = renderCanvas.getContext('2d');
 
                 if (el.type === 'signature') {
                     const img = await new Promise((res) => {
                         const i = new Image();
                         i.onload = () => res(i);
+                        i.onerror = () => res(i);
                         i.src = el.content;
                     });
-                    
-                    // Fit image to high-res canvas while maintaining aspect ratio
-                    const imgRatio = img.width / img.height;
-                    const canvasRatio = renderCanvas.width / renderCanvas.height;
-                    let drawW, drawH, drawX, drawY;
 
-                    if (imgRatio > canvasRatio) {
-                        drawW = renderCanvas.width;
-                        drawH = drawW / imgRatio;
-                        drawX = 0;
-                        drawY = (renderCanvas.height - drawH) / 2;
-                    } else {
-                        drawH = renderCanvas.height;
-                        drawW = drawH * imgRatio;
-                        drawX = (renderCanvas.width - drawW) / 2;
-                        drawY = 0;
-                    }
-
-                    rCtx.drawImage(img, drawX, drawY, drawW, drawH);
+                    rCtx.drawImage(img, 0, 0, renderCanvas.width, renderCanvas.height);
                 } else {
-                    // Use captured styles (color/font)
                     rCtx.fillStyle = el.color;
                     const font = el.type === 'initials' ? el.font : 'Inter, sans-serif';
-                    rCtx.font = `bold ${renderCanvas.height * 0.6}px ${font}`;
+                    rCtx.font = `bold ${renderCanvas.height * 0.55}px ${font}`;
                     rCtx.textAlign = 'center';
                     rCtx.textBaseline = 'middle';
                     rCtx.fillText(el.content, renderCanvas.width / 2, renderCanvas.height / 2);
@@ -627,7 +896,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            // Flatten form annotations if option is selected
+            // Flatten Document (Burn in Signature)
             const flattenToggle = document.getElementById('flatten-signature-toggle');
             if (flattenToggle && flattenToggle.checked) {
                 try {
@@ -651,9 +920,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (err) {
             console.error(err);
-            alert("Error saving PDF.");
+            alert('Error saving PDF.');
         } finally {
-            applyBtn.innerText = "Authorize & Download ➔";
+            applyBtn.innerText = 'Authorize & Download ➔';
             applyBtn.disabled = false;
         }
     };

@@ -204,11 +204,12 @@
                 </div>
                 <div style="display: flex; flex-wrap: wrap; gap: 8px;" id="next-action-btn-row">
                     <button class="btn secondary sm action-chain-btn" data-tool="compress-pdf.html" style="border-radius: 9px; font-size: 0.82rem;">📉 Compress</button>
+                    <button class="btn secondary sm action-chain-btn" data-tool="remove-watermark.html" style="border-radius: 9px; font-size: 0.82rem;">🧹 Remove Watermark</button>
                     <button class="btn secondary sm action-chain-btn" data-tool="watermark-pdf.html" style="border-radius: 9px; font-size: 0.82rem;">🔏 Watermark</button>
                     <button class="btn secondary sm action-chain-btn" data-tool="edit-pdf.html" style="border-radius: 9px; font-size: 0.82rem;">📝 Edit PDF</button>
                     <button class="btn secondary sm action-chain-btn" data-tool="sign-pdf.html" style="border-radius: 9px; font-size: 0.82rem;">✍️ Sign</button>
                     <button class="btn secondary sm action-chain-btn" data-tool="protect-pdf.html" style="border-radius: 9px; font-size: 0.82rem;">🔒 Protect</button>
-                    <button class="btn secondary sm action-chain-btn" data-tool="form-filler.html" style="border-radius: 9px; font-size: 0.82rem;">📋 Form Filler</button>
+                    <button class="btn secondary sm action-chain-btn" data-tool="organize-pdf.html" style="border-radius: 9px; font-size: 0.82rem;">📂 Organize</button>
                     <button class="btn secondary sm action-chain-btn" data-tool="split-pdf.html" style="border-radius: 9px; font-size: 0.82rem;">✂️ Split</button>
                     <button class="btn secondary sm action-chain-btn" data-tool="edit-metadata.html" style="border-radius: 9px; font-size: 0.82rem;">📋 Metadata</button>
                 </div>

@@ -10,9 +10,9 @@
     <style>
         .watermark-workspace {
             display: grid;
-            grid-template-columns: 1fr 400px;
+            grid-template-columns: 1fr 420px;
             gap: 2.5rem;
-            max-width: 1200px;
+            max-width: 1240px;
             margin: 0 auto;
         }
 
@@ -36,25 +36,27 @@
             -webkit-backdrop-filter: blur(16px);
             border-radius: 28px;
             border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 2.5rem;
+            padding: 2.2rem;
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
             height: fit-content;
         }
 
         .radio-option {
-            background: rgba(0, 0, 0, 0.2);
+            background: rgba(0, 0, 0, 0.25);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 1.25rem;
-            margin-bottom: 1rem;
+            border-radius: 14px;
+            padding: 1.15rem 1.4rem;
+            margin-bottom: 0.9rem;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
+            display: flex;
+            align-items: center;
         }
 
         .radio-option:hover {
-            background: rgba(255, 255, 255, 0.03);
-            border-color: rgba(var(--primary-rgb), 0.3);
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(var(--primary-rgb), 0.4);
         }
 
         .radio-option input {
@@ -63,37 +65,65 @@
 
         .radio-option.active {
             border-color: var(--primary);
-            background: rgba(var(--primary-rgb), 0.1);
-            box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.15);
+            background: rgba(var(--primary-rgb), 0.12);
+            box-shadow: 0 0 16px rgba(var(--primary-rgb), 0.18);
         }
 
-        .radio-option.active::after {
-            content: '✓';
-            position: absolute;
-            top: 1.25rem;
-            right: 1.25rem;
+        .option-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            gap: 1rem;
+        }
+
+        .radio-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.35);
+            display: inline-block;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+            background: transparent;
+        }
+
+        .radio-option.active .radio-dot {
+            border-color: var(--primary);
+            background: var(--primary);
+            box-shadow: 0 0 8px var(--primary);
+        }
+
+        .engine-name {
+            font-size: 1.02rem;
+            font-weight: 600;
+            color: var(--text-main);
+            letter-spacing: -0.2px;
+        }
+
+        .engine-size {
+            font-size: 0.95rem;
+            font-weight: 700;
             color: var(--primary);
-            font-weight: 800;
+            font-family: monospace;
+            background: rgba(var(--primary-rgb), 0.15);
+            padding: 4px 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(var(--primary-rgb), 0.25);
+            white-space: nowrap;
         }
 
-        .radio-option strong {
-            display: block;
-            font-size: 1.05rem;
-            margin-bottom: 0.25rem;
-        }
-
-        .radio-option span {
-            font-size: 0.85rem;
-            opacity: 0.65;
-            display: block;
-            line-height: 1.4;
+        [data-theme="dark"] .engine-size {
+            color: #60a5fa;
+            background: rgba(96, 165, 250, 0.15);
+            border-color: rgba(96, 165, 250, 0.3);
         }
 
         #progress-container {
-            margin: 2rem 0;
-            padding: 1.5rem;
+            margin: 1.5rem 0;
+            padding: 1.2rem;
             background: rgba(0, 0, 0, 0.3);
-            border-radius: 15px;
+            border-radius: 14px;
             border: 1px solid rgba(var(--primary-rgb), 0.2);
         }
 
@@ -103,7 +133,7 @@
             background: rgba(255, 255, 255, 0.05);
             border-radius: 10px;
             overflow: hidden;
-            margin-top: 1rem;
+            margin-top: 0.8rem;
         }
 
         #progress-bar {
@@ -115,10 +145,10 @@
 
         /* Batch styles */
         .batch-wrapper {
-            max-width: 1200px;
+            max-width: 1240px;
             margin: 0 auto;
             display: grid;
-            grid-template-columns: 1fr 380px;
+            grid-template-columns: 1fr 400px;
             gap: 2.5rem;
         }
 
@@ -167,6 +197,7 @@
 
         .watermark-workspace:not(.hidden),
         .batch-wrapper:not(.hidden) {
+            display: grid !important;
             animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
     </style>
@@ -191,8 +222,8 @@
         </nav>
 
         <header style="text-align: center; margin-bottom: 3rem; margin-top: 2rem;">
-            <h1 style="font-size: 2.8rem; margin-bottom: 1rem; background: linear-gradient(135deg, var(--text-main) 0%, var(--primary) 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Neural Compress</h1>
-            <p style="color: var(--text-muted); font-size: 1.1rem; max-width: 650px; margin: 0 auto;">Shrink your files for faster sharing without sacrificing clarity. Choose lossless vector stream optimization or intelligent image compression.</p>
+            <h1 style="font-size: 2.8rem; margin-bottom: 1rem; background: linear-gradient(135deg, var(--text-main) 0%, var(--primary) 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Compress PDF</h1>
+            <p style="color: var(--text-muted); font-size: 1.1rem; max-width: 650px; margin: 0 auto;">Shrink your files for faster sharing without sacrificing clarity. Select an engine below to see the resulting size.</p>
         </header>
 
         <main>
@@ -221,34 +252,49 @@
                 </div>
 
                 <aside class="sidebar-section" id="sidebar">
-                    <h2 style="font-size: 1.4rem; font-weight: 700; margin-bottom: 1.8rem;">Compression Engine</h2>
+                    <h2 style="font-size: 1.4rem; font-weight: 700; margin-bottom: 1.5rem;">Compression Engine</h2>
 
                     <div class="setting-group" id="comp-options">
                         <div class="radio-option active" data-val="lossless">
                             <input type="radio" id="comp-lossless" name="compression" value="lossless" checked>
-                            <strong>⚡ Lossless Vector Stream (Crisp)</strong>
-                            <span>Optimizes cross-reference tables & object streams. Preserves 100% vector text and fonts.</span>
+                            <div class="option-row">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span class="radio-dot"></span>
+                                    <span class="engine-name">Lossless Compression</span>
+                                </div>
+                                <span class="engine-size" id="est-lossless">--</span>
+                            </div>
                         </div>
                         <div class="radio-option" data-val="recommended">
                             <input type="radio" id="comp-recommended" name="compression" value="recommended">
-                            <strong>High Fidelity Balance</strong>
-                            <span>Intelligent downsampling for documents with images and scans.</span>
+                            <div class="option-row">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span class="radio-dot"></span>
+                                    <span class="engine-name">High Fidelity</span>
+                                </div>
+                                <span class="engine-size" id="est-recommended">--</span>
+                            </div>
                         </div>
                         <div class="radio-option" data-val="extreme">
                             <input type="radio" id="comp-extreme" name="compression" value="extreme">
-                            <strong>Maximum Shrink</strong>
-                            <span>Aggressive compression for large scanned PDFs.</span>
+                            <div class="option-row">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span class="radio-dot"></span>
+                                    <span class="engine-name">Maximum Shrink</span>
+                                </div>
+                                <span class="engine-size" id="est-extreme">--</span>
+                            </div>
                         </div>
                     </div>
 
                     <div id="progress-container" class="hidden">
-                        <div style="font-weight: 600; font-size: 0.9rem;" id="progress-text">Neural optimization in progress...</div>
+                        <div style="font-weight: 600; font-size: 0.9rem;" id="progress-text">Compression in progress...</div>
                         <div class="progress-bar-bg">
                             <div id="progress-bar"></div>
                         </div>
                     </div>
 
-                    <button id="apply-btn" class="btn primary full-width action-btn" style="padding: 1.2rem; font-weight: 700; border-radius: 12px; margin-top: 1rem;">Start Compression ➔</button>
+                    <button id="apply-btn" class="btn primary full-width action-btn" style="padding: 1.15rem; font-weight: 700; border-radius: 12px; margin-top: 1rem;">Start Compression ➔</button>
                 </aside>
             </div>
 
@@ -272,23 +318,38 @@
                 </div>
 
                 <aside class="sidebar-section">
-                    <h2 style="font-size: 1.4rem; font-weight: 700; margin-bottom: 1.8rem;">Batch Profile</h2>
+                    <h2 style="font-size: 1.4rem; font-weight: 700; margin-bottom: 1.5rem;">Batch Profile</h2>
 
                     <div class="setting-group" id="batch-comp-options">
                         <div class="radio-option active" data-val="lossless">
                             <input type="radio" id="b-comp-lossless" name="batch-compression" value="lossless" checked>
-                            <strong>⚡ Lossless Vector Stream</strong>
-                            <span>Retains razor-sharp vector text.</span>
+                            <div class="option-row">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span class="radio-dot"></span>
+                                    <span class="engine-name">Lossless Compression</span>
+                                </div>
+                                <span class="engine-size" id="b-est-lossless">~15% shrink</span>
+                            </div>
                         </div>
                         <div class="radio-option" data-val="recommended">
                             <input type="radio" id="b-comp-recommended" name="batch-compression" value="recommended">
-                            <strong>High Fidelity Balance</strong>
-                            <span>Optimal for mixed & scanned documents.</span>
+                            <div class="option-row">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span class="radio-dot"></span>
+                                    <span class="engine-name">High Fidelity</span>
+                                </div>
+                                <span class="engine-size" id="b-est-recommended">~48% shrink</span>
+                            </div>
                         </div>
                         <div class="radio-option" data-val="extreme">
                             <input type="radio" id="b-comp-extreme" name="batch-compression" value="extreme">
-                            <strong>Maximum Shrink</strong>
-                            <span>Aggressive size reduction.</span>
+                            <div class="option-row">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span class="radio-dot"></span>
+                                    <span class="engine-name">Maximum Shrink</span>
+                                </div>
+                                <span class="engine-size" id="b-est-extreme">~72% shrink</span>
+                            </div>
                         </div>
                     </div>
 
@@ -299,14 +360,14 @@
                         </div>
                     </div>
 
-                    <button id="batch-apply-btn" class="btn primary full-width action-btn" style="padding: 1.2rem; font-weight: 700; border-radius: 12px; margin-top: 1rem;">
+                    <button id="batch-apply-btn" class="btn primary full-width action-btn" style="padding: 1.15rem; font-weight: 700; border-radius: 12px; margin-top: 1rem;">
                         Compress All & Download ZIP ➔
                     </button>
                 </aside>
             </div>
 
             <!-- Next Action Container for Pipeline -->
-            <div id="pipeline-next-container" style="max-width: 1200px; margin: 2.5rem auto;"></div>
+            <div id="pipeline-next-container" style="max-width: 1240px; margin: 2.5rem auto;"></div>
         </main>
 
         <footer>

@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDFPals - Organize PowerPoint</title>
+    <link rel="stylesheet" href="../css/main.css?v=100">
+    <link rel="stylesheet" href="../css/tool.css">
+    <style>
+        .ppt-workspace {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 2rem;
+            animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .preview-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 28px;
+            padding: 2.5rem;
+            min-height: 80vh;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .slide-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 1.8rem;
+            width: 100%;
+            margin-top: 1rem;
+        }
+
+        .slide-card {
+            background: #ffffff;
+            border-radius: 14px;
+            aspect-ratio: 16 / 9;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            position: relative;
+            padding: 1.2rem;
+            cursor: grab;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            user-select: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            color: #1e293b;
+            border: 2px solid transparent;
+            overflow: hidden;
+        }
+
+        .slide-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+            border-color: #ea580c;
+        }
+
+        .slide-card.dragging {
+            opacity: 0.35;
+            transform: scale(0.96);
+            border: 2px dashed #ea580c;
+        }
+
+        .slide-card.drag-over {
+            border: 2px solid #ea580c;
+            transform: scale(1.03);
+            box-shadow: 0 0 20px rgba(234, 88, 12, 0.4);
+        }
+
+        .slide-num-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: #ea580c;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: 6px;
+            z-index: 10;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        .slide-delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 28px;
+            height: 28px;
+            background: #ef4444;
+            color: #ffffff;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 800;
+            cursor: pointer;
+            z-index: 20;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+            transition: all 0.2s ease;
+        }
+
+        .slide-delete-btn:hover {
+            transform: scale(1.15);
+            background: #dc2626;
+        }
+
+        .slide-header {
+            margin-top: 1.2rem;
+        }
+
+        .slide-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #0f172a;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 4px;
+        }
+
+        .slide-body-preview {
+            font-size: 0.72rem;
+            color: #64748b;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .slide-footer-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-top: 1px solid #f1f5f9;
+            padding-top: 6px;
+            font-size: 0.7rem;
+            color: #94a3b8;
+        }
+
+        .slide-quick-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .slide-qa-btn {
+            background: #f1f5f9;
+            border: none;
+            color: #475569;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.15s ease;
+        }
+
+        .slide-qa-btn:hover {
+            background: #ea580c;
+            color: #fff;
+        }
+
+        .sidebar-section {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 28px;
+            padding: 2rem;
+            height: fit-content;
+            position: sticky;
+            top: 2rem;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+    <script src="../vendor/jszip/dist/jszip.min.js"></script>
+    <script src="../js/workflow-bridge.js"></script>
+    <script type="module" src="organize-ppt.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <nav class="app-header">
+            <a href="../index.html" class="brand-logo">
+                <img src="../assets/icon.png" alt="PDFPals" style="height: 32px; vertical-align: middle; margin-right: 8px;"> PDFPals
+            </a>
+            <div class="tool-nav">
+                <button id="theme-toggle" aria-label="Toggle Theme">
+                    <span class="icon">☀️</span>
+                </button>
+                <a href="../index.html" class="btn back-link">Back to Menu</a>
+            </div>
+        </nav>
+
+        <header style="text-align: center; margin-bottom: 3.5rem; margin-top: 1.5rem;">
+            <h1 style="font-size: 3rem; margin-bottom: 1rem; background: linear-gradient(135deg, var(--text-main) 0%, #ea580c 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px;">Organize PowerPoint</h1>
+            <p style="color: var(--text-muted); font-size: 1.15rem; max-width: 650px; margin: 0 auto;">Reorder, delete, duplicate, and merge presentation slides in real time. 100% private in your browser.</p>
+        </header>
+
+        <main>
+            <!-- Drop Zone -->
+            <div id="drop-zone" class="drop-zone">
+                <div class="drop-content">
+                    <div class="icon-row" style="font-size: 4rem; margin-bottom: 1.5rem;">
+                        <span>📊</span>
+                    </div>
+                    <p style="font-size: 1.4rem; font-weight: 600;">Drop PowerPoint (.pptx) here</p>
+                    <p style="margin: 1.5rem 0; opacity: 0.6;">or <label for="file-input" class="browse-btn" style="text-decoration: underline; cursor: pointer;">Browse Files</label></p>
+                    <input type="file" id="file-input" accept=".pptx" multiple hidden>
+                </div>
+            </div>
+
+            <!-- Workspace -->
+            <div id="workspace" class="ppt-workspace hidden">
+                <div class="preview-panel">
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 1.2rem; background: rgba(255,255,255,0.05); padding: 10px 18px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1);">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span id="slide-count-badge" style="background: #ea580c; color: #fff; padding: 4px 10px; border-radius: 8px; font-size: 0.85rem; font-weight: 700;">0 Slides</span>
+                            <span style="font-size: 0.88rem; color: var(--text-muted);">Drag slide cards to reorder</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <label for="add-pptx-input" class="btn secondary outline small" style="cursor: pointer; font-size: 0.82rem; margin: 0; display: inline-flex; align-items: center; gap: 6px;">
+                                <span>➕</span> Add Another PPTX
+                            </label>
+                            <input type="file" id="add-pptx-input" accept=".pptx" multiple hidden>
+                            <button id="reset-order-btn" class="btn secondary outline small" style="font-size: 0.82rem;">Reset</button>
+                        </div>
+                    </div>
+
+                    <div id="slide-grid" class="slide-grid">
+                        <!-- Slide cards dynamically injected here -->
+                    </div>
+                </div>
+
+                <aside class="sidebar-section">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h2 style="font-size: 1.3rem; margin: 0; font-weight: 700;">Deck Summary</h2>
+                        <button id="change-file-btn" class="btn secondary outline small" style="border-radius: 8px;">Switch</button>
+                    </div>
+
+                    <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px; margin-bottom: 1.5rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.85rem;">
+                            <span style="color: var(--text-muted);">Active Files:</span>
+                            <span id="source-files-count" style="font-weight: 700; color: var(--text-main);">1</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.85rem;">
+                            <span style="color: var(--text-muted);">Total Slides:</span>
+                            <span id="stat-total-slides" style="font-weight: 700; color: #ea580c;">0</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.85rem;">
+                            <span style="color: var(--text-muted);">Primary Document:</span>
+                            <span id="stat-primary-name" style="font-weight: 600; color: var(--text-muted); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">presentation.pptx</span>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: block; font-size: 0.78rem; text-transform: uppercase; font-weight: 700; color: #ea580c; margin-bottom: 0.5rem; letter-spacing: 0.5px;">Export File Name</label>
+                        <input type="text" id="export-filename" value="organized_presentation.pptx" style="width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 10px; color: #fff; font-size: 0.9rem;">
+                    </div>
+
+                    <p style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 1.5rem; background: rgba(255,255,255,0.03); padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.06);">
+                        💡 <b>Tip:</b> Click <b>✕</b> on any slide to delete it, or use the <b>Duplicate</b> and arrow buttons to quickly reorganize.
+                    </p>
+
+                    <button id="apply-btn" class="btn primary full-width action-btn" style="padding: 1.15rem; border-radius: 12px; font-weight: 700; font-size: 1rem; background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%); border: none;">
+                        Export Organized PPTX ➔
+                    </button>
+
+                    <div id="next-action-container" style="margin-top: 1.5rem;"></div>
+                </aside>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 PDFPals. Locally processed, secure & private.</p>
+        </footer>
+    </div>
+    <script src="../js/mobile-bridge.js"></script>
+    <script src="../js/theme.js?v=100"></script>
+</body>
+
+</html>

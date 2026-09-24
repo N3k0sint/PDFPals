@@ -54,16 +54,46 @@ Experience a premium, high-fidelity interface with dynamic themes (Light, Dark, 
 *   **Web to Canvas**: Transform raw HTML/CSS into professional PDF layouts.
 
 ### 📂 Organize
-*   **Merge PDF**: Combine multiple documents with precision.
-*   **Split PDF**: Extract specific ranges or pages into new files.
-*   **Organize PDF**: Visual drag-and-drop page reordering and multi-file assembly.
-*   **Rotate Panorama**: Fix orientation issues across individual pages or your entire document.
-*   **Crop PDF**: Trim margins or cut out areas with pixel-perfect accuracy.
+*   **Organize PDF (Upgraded)**:
+    *   **Visual Drag-and-Drop**: Freeform drag-and-drop page reordering with edge auto-scrolling physics.
+    *   **Add Blank Page**: Insert clean, vector-rendered blank pages at any position with matching document geometry.
+    *   **High-Visibility Delete (`✕`)**: Prominent 32px circular crimson delete buttons with hover scaling for quick, effortless page removal.
+    *   **Unlimited Document Queuing**: Append multiple PDFs seamlessly without page limits.
+*   **Organize Word (.docx) (New Tool)**:
+    *   **Visual Section & Page Cards**: Extracts and displays real document section titles, live text snippets, and embedded images directly from `word/media/`.
+    *   **Drag-and-Drop Reordering**: Reorder sections, merge multiple documents, and delete unwanted pages with one click.
+    *   **Insert Blank Page**: Add blank page breaks anywhere in the document sequence.
+    *   **Native Word (.docx) Compilation**: Merges multiple Word files with deep OpenXML relationship remapping and media namespace isolation, preventing image collisions and missing pictures.
+    *   **Optional PDF Export**: Export directly as a clean PDF if desired.
+*   **Organize PowerPoint (.pptx) (New Tool)**:
+    *   **Widescreen 16:9 Preservation**: Preserves original canvas dimensions (`<p:sldSz type="screen16x9"/>`) and landscape aspect ratios without squishing to 4:3.
+    *   **Zero Repair Warnings**: Non-destructive OpenXML engine assigns non-colliding slide IDs (`p:sldId`) and validates relationships, completely eliminating PowerPoint's "Repair Presentation" prompt.
+    *   **Multi-Deck Slide Sorter**: Visual slide cards with title and text extraction, duplicate, delete, and reorder controls.
+    *   **Media Asset Isolation**: Automatically isolates and copies media assets across presentations to prevent image overwrite collisions.
+*   **Merge PDF**: Combine multiple documents with precision and custom ordering.
+*   **Split PDF**: Extract specific ranges, odd/even pages, or split into individual single-page files.
+*   **Rotate Panorama**: Fix orientation issues across individual pages or your entire document in 90-degree increments.
+*   **Crop PDF**: Trim margins or cut out areas with pixel-perfect visual crop boxes.
 
 ### ⚡ Optimize & Security
-*   **Neural Compress**: Advanced local compression engine for sharing large files.
-*   **Protect PDF**: Add industry-standard password encryption.
-*   **Unlock PDF**: Remove passwords from protected documents.
+*   **Compress PDF (Upgraded)**:
+    *   **Pre-Flight Size Previews**: Instant estimated resultant file sizes for all 3 compression engines (Basic, Strong, Extreme) directly on the cards before starting compression.
+    *   **Clean Streamlined Layout**: Modern, distraction-free cards focusing on compression ratio and resultant quality.
+    *   **100% In-Browser Compression**: Powered by local canvas resampling and WebAssembly image quantization.
+*   **Remove Watermark (New Tool)**:
+    *   **Clean Vector Precision**: Erase watermarks, background stamps, and logos from PDF documents.
+    *   **Dual Removal Engine**: Intelligent text pattern purges and visual bounding-box area removal.
+    *   **Real-Time Before/After Preview**: Inspect cleaned pages live before downloading.
+*   **Sign PDF (Upgraded)**:
+    *   **Multi-Mode Digital Signatures**: Draw smoothly with vector smoothing, type with certificate typography, or upload transparent PNG/JPG signature stamps.
+    *   **Interactive Resizing & Placement**: Smoothly drag, position, and resize signatures on any page.
+    *   **Flatten Document (Burn in Signature)**: Permanently flattens annotations and signature fields directly into the vector page stream, preventing separation, tampering, or extraction by third parties.
+*   **Watermark PDF (Upgraded)**:
+    *   **Live Interactive Preview**: See watermarks directly on your actual PDF page in real time with 1:1 preview-to-download accuracy.
+    *   **Dynamic Positioning & Mosaic**: Adjust opacity, rotation, tile mosaics, and exact placement.
+    *   **Flatten Watermark (Embed Permanently)**: Flattens watermarks directly into the vector content stream to prevent removal or separation.
+*   **Protect PDF**: Add industry-standard AES password encryption.
+*   **Unlock PDF**: Remove passwords from protected documents locally.
 
 ### 📷 Specialized
 *   **CamScanner**: AI-powered document digitization with auto-edge detection, perspective warp, and high-contrast filters.

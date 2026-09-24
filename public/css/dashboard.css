@@ -136,6 +136,10 @@
     background: #fb8c00;
 }
 
+.icon-box.orange {
+    background: #ea580c;
+}
+
 .icon-box.purple {
     background: #8e24aa;
 }
@@ -418,4 +422,64 @@
 @keyframes scaleIn {
     from { opacity: 0; transform: scale(0.95); }
     to { opacity: 1; transform: scale(1); }
+}
+
+/* Command Palette Trigger Button in Navbar */
+#cmd-palette-btn {
+    background: #f1f5f9;
+    border: 1px solid var(--border);
+    color: var(--text-main) !important;
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+#cmd-palette-btn:hover {
+    background: #e2e8f0;
+    border-color: var(--primary);
+    color: var(--primary) !important;
+    transform: translateY(-1px);
+}
+
+#cmd-palette-btn .search-icon {
+    font-size: 0.95rem;
+    line-height: 1;
+}
+
+#cmd-palette-btn kbd {
+    background: rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 0.72rem;
+    font-family: monospace;
+    font-weight: 500;
+}
+
+[data-theme="dark"] #cmd-palette-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] #cmd-palette-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--primary);
+    color: #60a5fa !important;
+}
+
+[data-theme="dark"] #cmd-palette-btn kbd {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #cbd5e1;
 }

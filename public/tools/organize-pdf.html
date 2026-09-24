@@ -56,6 +56,45 @@
             background: rgba(var(--primary-rgb), 0.05);
         }
 
+        .page-item.drag-over {
+            border: 2px dashed var(--primary) !important;
+            transform: scale(1.04);
+            box-shadow: 0 0 20px rgba(var(--primary-rgb), 0.4);
+        }
+        
+        .delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #ef4444;
+            color: #ffffff !important;
+            border: 2px solid rgba(255, 255, 255, 0.95);
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 800;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 14px rgba(239, 68, 68, 0.5);
+            z-index: 20;
+            padding: 0;
+        }
+
+        .delete-btn:hover {
+            background: #dc2626;
+            transform: scale(1.18);
+            box-shadow: 0 6px 20px rgba(220, 38, 38, 0.7);
+        }
+
+        .delete-btn:active {
+            transform: scale(0.95);
+        }
+
         .page-item.dragging {
             opacity: 0.5;
             cursor: grabbing;
@@ -101,8 +140,8 @@
         </nav>
 
         <header style="text-align: center; margin-bottom: 4rem; margin-top: 2rem;">
-            <h1 style="font-size: 3.2rem; margin-bottom: 1.2rem; background: linear-gradient(135deg, var(--text-main) 0%, var(--primary) 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px;">Architect PDF</h1>
-            <p style="color: var(--text-muted); font-size: 1.25rem; max-width: 700px; margin: 0 auto; line-height: 1.6;">Reorder, rotate, or remove pages with a fluid drag-and-drop interface. Your document structure, redefined.</p>
+            <h1 style="font-size: 3.2rem; margin-bottom: 1.2rem; background: linear-gradient(135deg, var(--text-main) 0%, var(--primary) 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px;">Organize PDF</h1>
+            <p style="color: var(--text-muted); font-size: 1.25rem; max-width: 700px; margin: 0 auto; line-height: 1.6;">Reorder, rotate, or remove pages with fluid drag-and-drop. Auto-scrolls smoothly so you can move pages anywhere across long documents.</p>
         </header>
 
         <main>
@@ -113,7 +152,7 @@
                     </div>
                     <p style="font-size: 1.4rem; font-weight: 600;">Drop PDF to begin editing</p>
                     <p style="margin: 1.5rem 0; opacity: 0.6;">or <label class="browse-btn" style="text-decoration: underline;">Browse Local Storage</label></p>
-                    <input type="file" id="file-input" accept=".pdf" hidden>
+                    <input type="file" id="file-input" accept=".pdf" multiple hidden>
                 </div>
             </div>
 
@@ -131,6 +170,7 @@
                     <div class="actions" style="display: flex; gap: 1rem;">
                         <button id="add-more-btn" class="btn secondary small" style="border-radius: 10px; background: rgba(255,255,255,0.05);">➕ More Docs</button>
                         <input type="file" id="add-more-input" accept=".pdf" multiple hidden>
+                        <button id="add-blank-page-btn" class="btn secondary small" style="border-radius: 10px; background: rgba(255,255,255,0.05);">📄 Add Blank Page</button>
                         <button id="reset-btn" class="btn secondary small" style="border-radius: 10px;">Reset Order</button>
                         <button id="export-btn" class="btn primary" style="border-radius: 10px; font-weight: 700; padding: 0.8rem 1.8rem;">Export Final PDF ➔</button>
                     </div>
@@ -140,6 +180,7 @@
                     <!-- Thumbnails will be injected here -->
                 </div>
             </div>
+            <div id="pipeline-next-container" style="max-width: 1400px; margin: 2rem auto;"></div>
         </main>
 
         <div id="password-modal" class="modal hidden">

@@ -11,7 +11,9 @@ const fileNameSpan = document.getElementById('file-name');
 const pageGrid = document.getElementById('page-grid');
 const exportBtn = document.getElementById('export-btn');
 const resetBtn = document.getElementById('reset-btn');
+const addBlankPageBtn = document.getElementById('add-blank-page-btn');
 const changePdfBtn = document.getElementById('change-pdf-btn');
+const pipelineNext = document.getElementById('pipeline-next-container');
 
 const addMoreBtn = document.getElementById('add-more-btn');
 const addMoreInput = document.getElementById('add-more-input');
@@ -23,11 +25,11 @@ const submitPasswordBtn = document.getElementById('submit-password-btn');
 const cancelPasswordBtn = document.getElementById('cancel-password-btn');
 
 let sourceDocuments = []; // Array of { id: string, bytes: Uint8Array, password: str, name: str }
-let pages = []; // Array to store page data: { sourceDocId, originalIndex, imgData }
+let pages = []; // Array to store page data: { sourceDocId, originalIndex, imgData, fileName }
 let nextDocId = 1;
 let currentPendingDoc = null; // Used when waiting for password
 
-// --- Event Listeners: Drag & Drop ---
+// --- Event Listeners: Drag & Drop Files ---
 dropZone.addEventListener('dragover', (e) => {
     e.preventDefault();
     dropZone.classList.add('drag-over');
@@ -52,74 +54,122 @@ fileInput.addEventListener('change', (e) => {
     }
 });
 
-addMoreBtn.addEventListener('click', () => addMoreInput.click());
-addMoreInput.addEventListener('change', (e) => {
-    if (e.target.files.length > 0) {
-        handleFiles(Array.from(e.target.files));
-    }
-});
-
-resetBtn.addEventListener('click', async () => {
-    if (sourceDocuments.length > 0) {
-        // Clear pages and reload all original docs
-        pageGrid.innerHTML = '';
-        pages = [];
-        loading.classList.remove('hidden');
-
-        for (const doc of sourceDocuments) {
-            await loadPdf(doc.bytes, doc.id, doc.password);
+if (addMoreBtn && addMoreInput) {
+    addMoreBtn.addEventListener('click', () => addMoreInput.click());
+    addMoreInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            handleFiles(Array.from(e.target.files));
         }
+    });
+}
 
-        renderGrid();
-        loading.classList.add('hidden');
-    }
-});
+if (resetBtn) {
+    resetBtn.addEventListener('click', async () => {
+        if (sourceDocuments.length > 0) {
+            pageGrid.innerHTML = '';
+            pages = [];
+            loading.classList.remove('hidden');
+
+            for (const doc of sourceDocuments) {
+                await loadPdf(doc.bytes, doc.id, doc.password, doc.name);
+            }
+
+            renderGrid();
+            loading.classList.add('hidden');
+        }
+    });
+}
 
 exportBtn.addEventListener('click', generatePdf);
 
-// --- Core Logic ---
+function createBlankThumbnail() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 200;
+    canvas.height = 280;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 6]);
+    ctx.strokeRect(12, 12, canvas.width - 24, canvas.height - 24);
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = 'bold 15px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('📄 Blank Page', canvas.width / 2, canvas.height / 2);
+    return canvas.toDataURL('image/png');
+}
+
+if (addBlankPageBtn) {
+    addBlankPageBtn.addEventListener('click', () => {
+        const blankPage = {
+            sourceDocId: 'blank_' + Date.now(),
+            originalIndex: -1,
+            isBlank: true,
+            imgData: createBlankThumbnail(),
+            fileName: 'Blank Page'
+        };
+        pages.push(blankPage);
+        renderGrid();
+    });
+}
+
+
+// Incoming Workflow Pipeline check
+if (window.WorkflowBridge) {
+    window.WorkflowBridge.checkIncomingPipeline((incomingFile) => {
+        handleFiles([incomingFile]);
+    });
+}
 
 // --- Core Logic ---
 
 async function handleFiles(files) {
-    const validFiles = files.filter(f => f.type === 'application/pdf');
+    const validFiles = files.filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
     if (validFiles.length === 0) {
         alert('Please select valid PDF files.');
         return;
     }
 
-    if (sourceDocuments.length === 0) {
-        fileNameSpan.textContent = validFiles.length === 1 ? validFiles[0].name : `${validFiles.length} files`;
-    } else {
-        fileNameSpan.textContent = `${sourceDocuments.length + validFiles.length} files`;
-    }
+    if (pipelineNext) pipelineNext.innerHTML = '';
 
     dropZone.classList.add('hidden');
     loading.classList.remove('hidden');
     workspace.classList.add('hidden');
 
-    for (const file of validFiles) {
+    for (let i = 0; i < validFiles.length; i++) {
+        const file = validFiles[i];
+        const loadingP = loading.querySelector('p');
+        if (loadingP) {
+            loadingP.textContent = `Analyzing Document ${i + 1} of ${validFiles.length}: ${file.name}...`;
+        }
+
         try {
             const arrayBuffer = await file.arrayBuffer();
             const bytes = new Uint8Array(arrayBuffer);
-            const docId = `doc_${nextDocId++}`;
+            const docId = `doc_${nextDocId++}_${Date.now()}`;
 
-            // Note: If loadPdf fails due to password, it will trigger modal and return gracefully
-            // but we need to wait manually to not overlap processing. 
-            // In a robust implementation we might queue them, but for now we process sequentially.
             const success = await loadPdf(bytes, docId, '', file.name);
             if (success) {
-                sourceDocuments.push({ id: docId, bytes: bytes, password: '', name: file.name });
+                sourceDocuments.push({ 
+                    id: docId, 
+                    bytes: bytes.slice(0), 
+                    password: '', 
+                    name: file.name 
+                });
             }
         } catch (error) {
             console.error("Error loading PDF:", error);
-            alert(`Could not load ${file.name}. It might be corrupted.`);
+            alert(`Could not load ${file.name}: ${error.message}`);
         }
     }
 
+    fileNameSpan.textContent = `${sourceDocuments.length} file${sourceDocuments.length === 1 ? '' : 's'}`;
+
     renderGrid();
 
-    // Only hide if we aren't waiting for a password modal
     if (passwordModal.classList.contains('hidden')) {
         loading.classList.add('hidden');
         workspace.classList.remove('hidden');
@@ -129,12 +179,13 @@ async function handleFiles(files) {
 async function loadPdf(pdfBytes, docId, password = '', fileName = '') {
     try {
         const loadingTask = pdfjsLib.getDocument({
-            data: pdfBytes.slice(),
+            data: pdfBytes.slice(0),
             password: password
         });
 
         const pdfjsDoc = await loadingTask.promise;
         const numPages = pdfjsDoc.numPages;
+        const tempPages = [];
 
         for (let i = 1; i <= numPages; i++) {
             const page = await pdfjsDoc.getPage(i);
@@ -147,13 +198,16 @@ async function loadPdf(pdfBytes, docId, password = '', fileName = '') {
 
             await page.render({ canvasContext: context, viewport: viewport }).promise;
 
-            pages.push({
+            tempPages.push({
                 sourceDocId: docId,
                 originalIndex: i - 1,
                 imgData: canvas.toDataURL(),
                 fileName: fileName
             });
         }
+
+        // Commit pages atomically only when all pages in this document succeed
+        pages.push(...tempPages);
         return true;
     } catch (error) {
         if (error.name === 'PasswordException' || (error.message && error.message.includes('PasswordException'))) {
@@ -161,8 +215,7 @@ async function loadPdf(pdfBytes, docId, password = '', fileName = '') {
             passwordModal.classList.remove('hidden');
             passwordInput.focus();
 
-            // Set pending so the modal system knows what to retry
-            currentPendingDoc = { bytes: pdfBytes, id: docId, name: fileName };
+            currentPendingDoc = { bytes: pdfBytes.slice(0), id: docId, name: fileName };
             return false;
         } else {
             console.error("Error rendering PDF:", error);
@@ -170,8 +223,6 @@ async function loadPdf(pdfBytes, docId, password = '', fileName = '') {
         }
     }
 }
-
-// --- Password Modal Logic ---
 
 // --- Password Modal Logic ---
 
@@ -194,11 +245,9 @@ submitPasswordBtn.addEventListener('click', async () => {
             loading.classList.add('hidden');
             workspace.classList.remove('hidden');
         }
-        // If it fails again, loadPdf will pop the modal back up.
     }
 });
 
-// Allow hitting Enter in the password field
 passwordInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
         submitPasswordBtn.click();
@@ -224,12 +273,89 @@ if (changePdfBtn) {
         dropZone.classList.remove('hidden');
         workspace.classList.add('hidden');
         fileInput.value = '';
-        addMoreInput.value = '';
+        if (addMoreInput) addMoreInput.value = '';
         fileNameSpan.textContent = '';
+        if (pipelineNext) pipelineNext.innerHTML = '';
+        stopAutoScroll();
     };
 }
 
-// --- UI Rendering & Drag Logic ---
+// ========================================================
+// --- AUTO-SCROLL ENGINE FOR DRAG AND DROP ---
+// ========================================================
+let autoScrollTimer = null;
+let autoScrollSpeed = 0;
+
+function updateAutoScroll(clientY) {
+    if (!draggedItem) return;
+
+    const threshold = 140; // Zone in pixels from top/bottom edge
+    const maxSpeed = 24;   // Max scroll speed per frame
+    const viewportHeight = window.innerHeight;
+
+    if (clientY < threshold) {
+        // Dragging near top of viewport -> Scroll UP
+        const factor = (threshold - clientY) / threshold;
+        autoScrollSpeed = -Math.max(4, Math.round(factor * maxSpeed));
+    } else if (clientY > viewportHeight - threshold) {
+        // Dragging near bottom of viewport -> Scroll DOWN
+        const factor = (clientY - (viewportHeight - threshold)) / threshold;
+        autoScrollSpeed = Math.max(4, Math.round(factor * maxSpeed));
+    } else {
+        autoScrollSpeed = 0;
+    }
+
+    if (autoScrollSpeed !== 0 && !autoScrollTimer) {
+        stepAutoScroll();
+    } else if (autoScrollSpeed === 0 && autoScrollTimer) {
+        stopAutoScroll();
+    }
+}
+
+function stepAutoScroll() {
+    if (autoScrollSpeed === 0 || !draggedItem) {
+        stopAutoScroll();
+        return;
+    }
+
+    window.scrollBy({ top: autoScrollSpeed, behavior: 'auto' });
+    autoScrollTimer = requestAnimationFrame(stepAutoScroll);
+}
+
+function stopAutoScroll() {
+    if (autoScrollTimer) {
+        cancelAnimationFrame(autoScrollTimer);
+        autoScrollTimer = null;
+    }
+    autoScrollSpeed = 0;
+}
+
+// Track mouse drag position anywhere across the document
+document.addEventListener('dragover', (e) => {
+    if (draggedItem) {
+        e.preventDefault();
+        updateAutoScroll(e.clientY);
+    }
+});
+
+// Enable mouse wheel scrolling while holding a dragged item
+window.addEventListener('wheel', (e) => {
+    if (draggedItem) {
+        window.scrollBy({ top: e.deltaY, behavior: 'auto' });
+    }
+}, { passive: true });
+
+// Stop auto-scroll whenever drag ends anywhere
+document.addEventListener('dragend', () => {
+    stopAutoScroll();
+    clearDragStyles();
+});
+
+// ========================================================
+// --- UI RENDERING & DRAG LOGIC ---
+// ========================================================
+
+let draggedItem = null;
 
 function renderGrid() {
     pageGrid.innerHTML = '';
@@ -238,7 +364,7 @@ function renderGrid() {
         const pageItem = document.createElement('div');
         pageItem.className = 'page-item';
         pageItem.draggable = true;
-        pageItem.dataset.index = currentIndex; // Current array index
+        pageItem.dataset.index = currentIndex;
 
         const thumbnailDiv = document.createElement('div');
         thumbnailDiv.className = 'page-thumbnail';
@@ -248,6 +374,7 @@ function renderGrid() {
         img.style.width = '100%';
         img.style.height = '100%';
         img.style.objectFit = 'contain';
+        img.draggable = false;
         thumbnailDiv.appendChild(img);
 
         const pageLabel = document.createElement('div');
@@ -256,8 +383,12 @@ function renderGrid() {
 
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'delete-btn';
-        deleteBtn.innerHTML = '×';
-        deleteBtn.title = 'Remove Page';
+        deleteBtn.innerHTML = '✕';
+        deleteBtn.title = `Delete Page ${currentIndex + 1}`;
+        deleteBtn.setAttribute('aria-label', `Delete Page ${currentIndex + 1}`);
+        
+        // Prevent drag start on button click
+        deleteBtn.onmousedown = (e) => e.stopPropagation();
         deleteBtn.onclick = (e) => {
             e.stopPropagation();
             pages.splice(currentIndex, 1);
@@ -280,17 +411,17 @@ function renderGrid() {
     });
 }
 
-let draggedItem = null;
-
 function handleDragStart(e) {
     draggedItem = this;
     e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', this.dataset.index);
     setTimeout(() => this.classList.add('dragging'), 0);
 }
 
 function handleDragOver(e) {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
+    updateAutoScroll(e.clientY);
     return false;
 }
 
@@ -308,27 +439,36 @@ function handleDragLeave() {
 function handleDrop(e) {
     e.stopPropagation();
     this.classList.remove('drag-over');
+    stopAutoScroll();
 
-    if (draggedItem !== this) {
-        const fromIndex = parseInt(draggedItem.dataset.index);
-        const toIndex = parseInt(this.dataset.index);
+    if (draggedItem && draggedItem !== this) {
+        const fromIndex = parseInt(draggedItem.dataset.index, 10);
+        const toIndex = parseInt(this.dataset.index, 10);
 
-        // Move item in array
-        const itemToMove = pages.splice(fromIndex, 1)[0];
-        pages.splice(toIndex, 0, itemToMove);
-
-        renderGrid(); // Re-render to update UI and indices
+        if (!isNaN(fromIndex) && !isNaN(toIndex)) {
+            const itemToMove = pages.splice(fromIndex, 1)[0];
+            pages.splice(toIndex, 0, itemToMove);
+            renderGrid();
+        }
     }
     return false;
 }
 
 function handleDragEnd() {
-    this.classList.remove('dragging');
-    const items = document.querySelectorAll('.page-item');
-    items.forEach(item => item.classList.remove('drag-over'));
+    stopAutoScroll();
+    clearDragStyles();
 }
 
-// --- Export Logic ---
+function clearDragStyles() {
+    if (draggedItem) {
+        draggedItem.classList.remove('dragging');
+        draggedItem = null;
+    }
+    document.querySelectorAll('.page-item').forEach(item => {
+        item.classList.remove('drag-over');
+        item.classList.remove('dragging');
+    });
+}
 
 // --- Export Logic ---
 
@@ -344,45 +484,86 @@ async function generatePdf() {
     try {
         const newDoc = await window.PDFLib.PDFDocument.create();
 
-        // Load all source PDFs into objects we can copy from
-        // Cache them so we don't reload the same document 50 times
-        const loadedSourceDocs = {};
+        // Load all source PDFs into a safe lookup Map
+        const loadedSourceDocs = new Map();
         for (const sourceDoc of sourceDocuments) {
-            const loadConfig = {};
-            if (sourceDoc.password) {
-                loadConfig.password = sourceDoc.password;
-            } else {
-                loadConfig.ignoreEncryption = true;
+            try {
+                const loadConfig = sourceDoc.password ? { password: sourceDoc.password } : { ignoreEncryption: true };
+                const pdfLibDoc = await window.PDFLib.PDFDocument.load(sourceDoc.bytes.slice(0), loadConfig);
+                loadedSourceDocs.set(sourceDoc.id, pdfLibDoc);
+            } catch (docErr) {
+                console.warn(`Could not load document ${sourceDoc.name}:`, docErr);
             }
-            loadedSourceDocs[sourceDoc.id] = await window.PDFLib.PDFDocument.load(sourceDoc.bytes, loadConfig);
         }
 
-        // Iterate through our dragged & dropped pages
+        // Copy pages in the new reordered sequence
+        let copiedCount = 0;
         for (const pageMetaData of pages) {
-            const srcDocId = pageMetaData.sourceDocId;
-            const srcIndex = pageMetaData.originalIndex;
+            if (pageMetaData.isBlank) {
+                // Add fresh blank page matching document dimensions
+                const refPage = newDoc.getPageCount() > 0 ? newDoc.getPage(0) : null;
+                const width = refPage ? refPage.getWidth() : 595.28;
+                const height = refPage ? refPage.getHeight() : 841.89;
+                newDoc.addPage([width, height]);
+                copiedCount++;
+                continue;
+            }
+            const srcDoc = loadedSourceDocs.get(pageMetaData.sourceDocId);
+            if (!srcDoc) {
+                console.warn(`Skipping page with missing source document: ${pageMetaData.fileName} (id: ${pageMetaData.sourceDocId})`);
+                continue;
+            }
 
-            const srcDoc = loadedSourceDocs[srcDocId];
-            const [copiedPage] = await newDoc.copyPages(srcDoc, [srcIndex]);
-            newDoc.addPage(copiedPage);
+            try {
+                const [copiedPage] = await newDoc.copyPages(srcDoc, [pageMetaData.originalIndex]);
+                if (copiedPage) {
+                    newDoc.addPage(copiedPage);
+                    copiedCount++;
+                }
+            } catch (pageErr) {
+                console.warn(`Error copying page ${pageMetaData.originalIndex + 1} from ${pageMetaData.fileName}:`, pageErr);
+            }
         }
 
-        // Save and Download
+        if (copiedCount === 0) {
+            throw new Error("No pages could be extracted from the provided documents. Please re-add the files.");
+        }
+
         newDoc.setProducer('PDFPals');
         newDoc.setCreator('PDFPals');
         const pdfBytes = await newDoc.save();
         const blob = new Blob([pdfBytes], { type: 'application/pdf' });
         
-        const originalName = sourceDocuments[0].name || 'document.pdf';
-        const fileName = originalName.replace('.pdf', '_organized.pdf');
-        await MobileBridge.saveFile(blob, fileName);
+        const originalName = sourceDocuments[0]?.name || 'document.pdf';
+        const fileName = originalName.replace(/\.pdf$/i, '_organized.pdf');
+
+        if (window.MobileBridge) {
+            await window.MobileBridge.saveFile(blob, fileName);
+        } else {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Cross-tool workflow chaining
+        if (window.WorkflowBridge && pipelineNext) {
+            window.WorkflowBridge.renderNextActionBar({
+                container: pipelineNext,
+                pdfBytes: pdfBytes,
+                fileName: fileName
+            });
+        }
 
     } catch (error) {
         console.error("FULL EXPORT ERROR:", error);
-        alert(`Failed to create the organized PDF. ${error.message}`);
+        alert(`Failed to create the organized PDF: ${error.message}`);
     } finally {
         exportBtn.disabled = false;
-        exportBtn.textContent = 'Organize & Download PDF';
+        exportBtn.textContent = 'Export Final PDF ➔';
     }
 }
-

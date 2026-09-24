@@ -17,8 +17,8 @@
                     style="height: 32px; vertical-align: middle; margin-right: 8px;"> PDFPals
             </a>
             <div class="tool-nav">
-                <button id="cmd-palette-btn" class="btn secondary sm" style="border-radius: 20px; padding: 6px 14px; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; cursor: pointer;">
-                    <span>🔍</span> Search <kbd style="background: rgba(0,0,0,0.08); border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; font-size: 0.72rem; font-family: monospace;">Ctrl+K</kbd>
+                <button id="cmd-palette-btn" aria-label="Quick search tools">
+                    <span class="search-icon">🔍</span> Search <kbd>Ctrl+K</kbd>
                 </button>
                 <button id="theme-toggle" aria-label="Toggle Theme">
                     <span class="icon">☀️</span>
@@ -55,13 +55,23 @@
             </a>
             <a href="tools/organize-pdf.html" class="tool-card" data-category="organize">
                 <div class="icon-box yellow">📂</div>
-                <h3>Architect PDF</h3>
-                <p>Sort, add and delete PDF pages. Drag and drop the page thumbnails and download.</p>
+                <h3>Organize PDF</h3>
+                <p>Sort, add, reorder, and delete PDF pages. Drag and drop page thumbnails freely.</p>
             </a>
             <a href="tools/scan-to-pdf.html" class="tool-card" data-category="organize">
                 <div class="icon-box purple">📸</div>
                 <h3>CamScanner</h3>
                 <p>Use your camera to capture documents and convert them directly into a PDF.</p>
+            </a>
+            <a href="tools/organize-word.html" class="tool-card" data-category="organize">
+                <div class="icon-box blue">📝</div>
+                <h3>Organize Word</h3>
+                <p>Reorder, merge, and organize Word documents (.docx) into one master document.</p>
+            </a>
+            <a href="tools/organize-ppt.html" class="tool-card" data-category="organize">
+                <div class="icon-box orange">📊</div>
+                <h3>Organize PowerPoint</h3>
+                <p>Reorder, delete, duplicate, and merge presentation slides (.pptx) freely.</p>
             </a>
 
             <!-- Optimize -->
@@ -134,6 +144,11 @@
                 <h3>Watermark PDF</h3>
                 <p>Stamp an image or text over your PDF.</p>
             </a>
+            <a href="tools/remove-watermark.html" class="tool-card" data-category="edit">
+                <div class="icon-box red">🧹</div>
+                <h3>Remove Watermark</h3>
+                <p>Erase watermarks, background stamps, and logos with clean vector precision.</p>
+            </a>
             <a href="tools/redact-pdf.html" class="tool-card" data-category="edit">
                 <div class="icon-box red">⬛</div>
                 <h3>Redact PDF</h3>
@@ -153,11 +168,6 @@
                 <div class="icon-box blue">📋</div>
                 <h3>Metadata Editor</h3>
                 <p>Inspect, edit, copy, and sanitize metadata for PDF, Word, Excel, and PowerPoint.</p>
-            </a>
-            <a href="tools/form-filler.html" class="tool-card" data-category="edit">
-                <div class="icon-box purple">📝</div>
-                <h3>Form Filler & Flatten</h3>
-                <p>Fill interactive AcroForm fields, checkboxes, and permanently flatten PDF documents.</p>
             </a>
 
             <!-- Security -->
@@ -202,11 +212,14 @@
                 <p style="margin: 0.9rem 0 1.2rem; font-size: 0.92rem; color: var(--text-muted); font-weight: 500;">Choose an instant action for this file:</p>
                 <div class="smart-action-grid">
                     <button class="smart-act-btn" data-tool="edit-pdf.html"><span>📝</span> Edit PDF</button>
-                    <button class="smart-act-btn" data-tool="form-filler.html"><span>📋</span> Form Filler</button>
+                    <button class="smart-act-btn" data-tool="organize-pdf.html"><span>📂</span> Organize PDF</button>
                     <button class="smart-act-btn" data-tool="compress-pdf.html"><span>📉</span> Compress</button>
                     <button class="smart-act-btn" data-tool="split-pdf.html"><span>✂️</span> Split Pages</button>
                     <button class="smart-act-btn" data-tool="sign-pdf.html"><span>✍️</span> Sign PDF</button>
                     <button class="smart-act-btn" data-tool="watermark-pdf.html"><span>🔏</span> Watermark</button>
+                    <button class="smart-act-btn" data-tool="remove-watermark.html"><span>🧹</span> Remove Watermark</button>
+                    <button class="smart-act-btn" data-tool="organize-ppt.html"><span>📊</span> Organize PPT</button>
+                    <button class="smart-act-btn" data-tool="organize-word.html"><span>📝</span> Organize Word</button>
                     <button class="smart-act-btn" data-tool="rotate-pdf.html"><span>↻</span> Rotate</button>
                     <button class="smart-act-btn" data-tool="protect-pdf.html"><span>🔒</span> Protect PDF</button>
                     <button class="smart-act-btn" data-tool="pdf-to-word.html"><span>📄</span> PDF to Word</button>

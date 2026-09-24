@@ -111,6 +111,37 @@ async function handleSingleFile(file) {
     dropZone.classList.add('hidden');
     batchWorkspace.classList.add('hidden');
     workspace.classList.remove('hidden');
+
+    // Run clean size calculations for the 3 options
+    updateCleanSizeEstimates(file.size);
+}
+
+// Clean size calculation for each engine
+async function updateCleanSizeEstimates(fileSize) {
+    if (!fileSize) return;
+
+    const estLosslessBadge = document.getElementById('est-lossless');
+    const estRecBadge = document.getElementById('est-recommended');
+    const estExtBadge = document.getElementById('est-extreme');
+
+    // 1. High Fidelity clean size (~52% of original)
+    const recSize = Math.max(1024, Math.round(fileSize * 0.52));
+    if (estRecBadge) estRecBadge.textContent = formatBytes(recSize);
+
+    // 2. Maximum Shrink clean size (~28% of original)
+    const extSize = Math.max(1024, Math.round(fileSize * 0.28));
+    if (estExtBadge) estExtBadge.textContent = formatBytes(extSize);
+
+    // 3. Lossless exact background measurement
+    if (estLosslessBadge) estLosslessBadge.textContent = 'Measuring...';
+    try {
+        const testDoc = await window.PDFLib.PDFDocument.load(singleBytes.slice(0), { ignoreEncryption: true });
+        const testBytes = await testDoc.save({ useObjectStreams: true, addDefaultPage: false });
+        if (estLosslessBadge) estLosslessBadge.textContent = formatBytes(testBytes.length);
+    } catch (e) {
+        const fallbackSize = Math.round(fileSize * 0.88);
+        if (estLosslessBadge) estLosslessBadge.textContent = formatBytes(fallbackSize);
+    }
 }
 
 changePdfBtn.onclick = () => {
@@ -132,7 +163,6 @@ async function compressDocument(bytes, compLevel, onProgress) {
         doc.setProducer('PDFPals');
         doc.setCreator('PDFPals');
         if (onProgress) onProgress(0.8, 'Compacting cross-reference streams...');
-        // Lossless stream compression with object streams enabled
         const out = await doc.save({ useObjectStreams: true, addDefaultPage: false });
         if (onProgress) onProgress(1.0, 'Optimization complete');
         return out;
@@ -220,7 +250,7 @@ applyBtn.addEventListener('click', async () => {
         const savingsText = savings > 0 ? `Saved ${savings}%` : 'Optimized streams';
 
         resultBadge.style.display = 'block';
-        resultBadge.innerHTML = `🎉 <b>Complete!</b> ${formatBytes(origSize)} ➔ <b>${formatBytes(newSize)}</b> (${savingsText})`;
+        resultBadge.innerHTML = `🎉 <b>Compression Complete!</b> ${formatBytes(origSize)} ➔ <b>${formatBytes(newSize)}</b> (${savingsText})`;
 
         const blob = new Blob([outBytes], { type: 'application/pdf' });
         const outFileName = singleFile.name.replace(/\.pdf$/i, '_compressed.pdf');
